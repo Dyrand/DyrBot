@@ -1,7 +1,6 @@
 #ifndef MESSAGE_STRUCT_HPP
 #define MESSAGE_STRUCT_HPP
 
-#include <vector>
 #include <string>
 
 namespace dyr
@@ -11,9 +10,7 @@ namespace dyr
   {
     std::string prefix;
     std::string command;
-    std::string raw_parameters;
-    std::string trailing;
-    std::vector<std::string> parameters;
+    std::string parameters;
   };
 }
 

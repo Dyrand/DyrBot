@@ -17,7 +17,7 @@
 #include <boost/system/error_code.hpp>
 
 #include "DyrBot.hpp"
-#include "parsers/message_parser.hpp"
+#include "parsers/parsers.hpp"
 #include "error/error_logger.hpp"
 
 namespace dyr
@@ -44,6 +44,8 @@ namespace dyr
     var["realname"]            = "Dyramic";
     var["default_channels"]    = "#dyrbot,#botdever";
     var["id_number"]           = id_number;
+    var["ident"]               = ">";
+    var["custodian"]           = "";
   }
 
   void DyrBot::configure()
@@ -81,6 +83,28 @@ namespace dyr
     }
   }
 
+  void DyrBot::save_config()
+  {
+    std::ofstream config_out;
+
+    //Assumes config_path is a directory and a filename or just a filename
+    if(!filesystem::is_regular_file(config_file))
+    { filesystem::create_directory(config_file.parent_path()); }
+
+    config_out.open(config_file.string(), std::ios_base::out | std::ios_base::trunc);
+    if(config_out.fail())
+    {
+      logError::toFile("Unable to open config file " + config_file.string());
+      return;
+    }
+
+    //Output to config_file
+    for(auto& pairs : var)
+    { config_out << pairs.first << "=" << pairs.second << std::endl; }
+
+    config_out.close();
+  }
+
   void DyrBot::generate_config_file(const filesystem::path& config_path)
   {
     std::ofstream config_out;
@@ -99,6 +123,8 @@ namespace dyr
     //Output to config_file
     for(auto& pairs : var)
     { config_out << pairs.first << "=" << pairs.second << std::endl; }
+
+    config_out.close();
   }
 
 
@@ -140,6 +166,11 @@ namespace dyr
     send("JOIN " + channel);
   }
 
+  void DyrBot::privmsg(const std::string& target, const std::string& message)
+  {
+    send("PRIVMSG " + target + " :" + message);
+  }
+
   void DyrBot::process()
   {
     register_connection();
@@ -164,6 +195,18 @@ namespace dyr
 
     text += "\r\n";
     std::shared_ptr<std::vector<char> > sendbuf = std::make_shared<std::vector<char> >(text.begin(),text.end());
+    tcp_socket.async_send(asio::buffer(*sendbuf), binded_send_handler);
+  }
+
+  void DyrBot::send(const std::string& text)
+  {
+    std::cout << "(SENDING):" << text << std::endl;
+    auto binded_send_handler = boost::bind(&send_handler, shared_from_this(),
+      placeholders::error, placeholders::iterator);
+
+    std::shared_ptr<std::vector<char> > sendbuf = std::make_shared<std::vector<char> >(text.begin(),text.end());
+    sendbuf->push_back('\r');
+    sendbuf->push_back('\n');
     tcp_socket.async_send(asio::buffer(*sendbuf), binded_send_handler);
   }
 
@@ -272,9 +315,9 @@ namespace dyr
       message = msg_queue.front();
 
       if(message.command == "PING")
-      { send("PONG " + message.raw_parameters); }
+      { send("PONG " + message.parameters); }
       else if(message.command == "PRIVMSG")
-      {}
+      { privmsg_handler(message); }
       else if(message.command == "001") //RPL_WELCOME
       { join(var["default_channels"]); }
       else if(message.command == "433") //ERR_NICKNAMEINUSE
@@ -283,6 +326,55 @@ namespace dyr
       { changeNick(""); }
 
       msg_queue.pop();
+    }
+  }
+
+  void DyrBot::privmsg_handler(const Message_Struct& message)
+  {
+    Privmsg_Struct msg(parsePrivmsg(message,var["ident"]));
+    if(!msg.command.empty())
+    {
+      if(msg.command.front() == '!')
+      {
+          if(msg.nickname == var["custodian"])
+          {
+            msg.command.erase(0,1);
+            if(msg.command == "save_config")
+            {
+              save_config();
+              privmsg(msg.target,"Configuration file saved!");
+            }
+            else if(msg.command == "set")
+            {
+              if(msg.arguments[""].size() >= 2)
+              {
+                if(msg.arguments[""].at(0) == "nickname")
+                { changeNick(msg.arguments[""].at(1)); }
+                else
+                {
+                  var[msg.arguments[""].at(0)] = msg.arguments[""].at(1);
+                  privmsg(msg.target,msg.arguments[""].at(0)+" set to "+msg.arguments[""].at(1));
+                }
+              }
+              else
+              { privmsg(msg.target,"Not enough parameters @"+msg.nickname); }
+            }
+            else if(msg.command == "see")
+            {
+              if(msg.arguments[""].size() >= 1)
+              {
+                std::string temp;
+                for(auto& str: msg.arguments[""])
+                { temp += str + "=\"" + var[str] + "\" "; }
+                privmsg(msg.target,temp);
+              }
+            }
+            else if(msg.command == "raw")
+            { send(msg.after_command); }
+          }
+          else
+          { privmsg(msg.target,"Must be a custodian to use '!' commands"); }
+      }
     }
   }
 }

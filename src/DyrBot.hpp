@@ -12,7 +12,8 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/system/error_code.hpp>
 
-#include "structs\message_struct.hpp"
+#include "structs/message_struct.hpp"
+#include "structs/privmsg_struct.hpp"
 
 namespace dyr
 {
@@ -33,15 +34,18 @@ namespace dyr
 
     private:
       void configure();
+      void save_config();
       void generate_config_file(const filesystem::path& config_path);
       void load_file();
 
       void register_connection();
 
       void changeNick(const std::string& nick);
-      void join(const std::string& channel );
+      void join(const std::string& channel);
+      void privmsg(const std::string& target, const std::string& message);
 
       void send(std::string&& text);
+      void send(const std::string& text);
       void receive();
 
       void send_handler(
@@ -60,6 +64,7 @@ namespace dyr
       );
 
       void message_handler();
+      void privmsg_handler(const Message_Struct& message);
 
       asio::ip::tcp::socket tcp_socket;
       std::map<std::string,std::string> var;

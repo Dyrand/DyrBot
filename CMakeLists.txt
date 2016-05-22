@@ -16,6 +16,7 @@ add_executable(
   src/ConnectionManager.cpp
   src/DyrBot.cpp
   src/parsers/message_parser.cpp
+  src/parsers/privmsg_parse.cpp
   src/error/error_logger.cpp
 )
 
