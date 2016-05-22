@@ -190,7 +190,7 @@ namespace dyr
   void DyrBot::send(std::string&& text)
   {
     std::cout << "(SENDING):" << text << std::endl;
-    auto binded_send_handler = boost::bind(&send_handler, shared_from_this(),
+    auto binded_send_handler = boost::bind(&DyrBot::send_handler, shared_from_this(),
       placeholders::error, placeholders::iterator);
 
     text += "\r\n";
@@ -201,7 +201,7 @@ namespace dyr
   void DyrBot::send(const std::string& text)
   {
     std::cout << "(SENDING):" << text << std::endl;
-    auto binded_send_handler = boost::bind(&send_handler, shared_from_this(),
+    auto binded_send_handler = boost::bind(&DyrBot::send_handler, shared_from_this(),
       placeholders::error, placeholders::iterator);
 
     std::shared_ptr<std::vector<char> > sendbuf = std::make_shared<std::vector<char> >(text.begin(),text.end());
@@ -212,7 +212,7 @@ namespace dyr
 
   void DyrBot::receive()
   {
-    auto binded_receive_handler = boost::bind(&receive_handler, shared_from_this(),
+    auto binded_receive_handler = boost::bind(&DyrBot::receive_handler, shared_from_this(),
       placeholders::error, placeholders::iterator);
     recbuf.emplace();
     tcp_socket.async_receive(asio::buffer(recbuf.back()), binded_receive_handler);
@@ -221,7 +221,7 @@ namespace dyr
 
   void DyrBot::connect(asio::ip::tcp::resolver::iterator& endpoint_iterator)
   {
-    auto connection_handler = boost::bind(&connect_handler, shared_from_this(),
+    auto connection_handler = boost::bind(&DyrBot::connect_handler, shared_from_this(),
       placeholders::error, placeholders::iterator); //Binded connect_handler
     asio::async_connect(tcp_socket, endpoint_iterator, connection_handler);
     begin_time = std::chrono::high_resolution_clock::now();
