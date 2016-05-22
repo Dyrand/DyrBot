@@ -63,7 +63,7 @@ namespace dyr
           initialized_bots.erase(initialized_bots.begin()+index);
           //Create actual thread for pair
           active_bots.back().second =
-            std::thread(active_bots.back().first->process,active_bots.back().first.get());
+            std::thread(std::bind(active_bots.back().first->process,active_bots.back().first.get()));
         }
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
