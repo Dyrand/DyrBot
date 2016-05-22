@@ -5,6 +5,7 @@
 #include <queue>
 #include <map>
 #include <ctime>
+#include <array>
 
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
