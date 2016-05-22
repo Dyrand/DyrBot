@@ -83,7 +83,7 @@ namespace dyr
       int pending_receives;
       int id_number;
 
-      std::default_random_engine random_num;
+      std::minstd_rand random_num;
       std::chrono::high_resolution_clock::time_point begin_time;
       std::chrono::high_resolution_clock::time_point end_time;
       std::chrono::high_resolution_clock::duration time_to_connect;
