@@ -9,13 +9,13 @@ namespace dyr
 {
   struct Privmsg_Struct
   {
-    std::string after_command;
     std::string nickname;
     std::string username;
     std::string target;
     std::string ident;
-    std::string command;
-    std::map<std::string,std::vector<std::string> > arguments;
+    std::vector<std::string> command;
+    std::vector<std::string> after_command;
+    std::vector<std::map<std::string,std::vector<std::string> > > arguments;
   };
 }
 

@@ -6,6 +6,8 @@
 #include <map>
 #include <ctime>
 #include <random>
+#include <chrono>
+#include <functional>
 
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
@@ -16,6 +18,8 @@
 #include "structs/message_struct.hpp"
 #include "structs/privmsg_struct.hpp"
 
+#include "modules/module.hpp"
+
 namespace dyr
 {
   namespace asio = boost::asio;
@@ -23,7 +27,10 @@ namespace dyr
 
   class DyrBot: public boost::enable_shared_from_this<DyrBot>
   {
+    friend class module::Module;
+
     public:
+
       DyrBot(
         asio::io_service& io_service_,
         std::string&& config_file_path = "",
@@ -41,7 +48,7 @@ namespace dyr
 
       void register_connection();
 
-      void changeNick(const std::string& nick);
+      void change_nick(const std::string& nick);
       void join(const std::string& channel);
       void privmsg(const std::string& target, const std::string& message);
 
@@ -77,6 +84,10 @@ namespace dyr
       std::queue<Message_Struct> msg_queue;
       Message_Struct message;
       std::queue<std::string> test_nicks;
+
+      std::map<
+        std::string,
+        std::reference_wrapper<module::restricted_command> > r_commands;
 
       bool stay_connected;
       bool ready_to_process;

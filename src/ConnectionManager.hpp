@@ -20,11 +20,10 @@ namespace dyr
     public:
       ConnectionManager(bool debug_mode = false);
 
-      void connect(
+      bool instantiate(
         std::string&& hostname,
-        std::string&& port,
-        std::string&& config_file = "",
-        std::string&& id_number = "0"
+        int&& port,
+        std::string&& config_file = ""
       );
       void process();
 
@@ -36,8 +35,6 @@ namespace dyr
       std::vector<std::pair<boost::shared_ptr<DyrBot>,std::thread> > active_bots;
 
       bool debug_mode;
-      /*Boost system error*/
-      //boost::system::error_code last_err;
   };
 }
 

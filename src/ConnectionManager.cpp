@@ -1,3 +1,4 @@
+#include <iostream>
 #include <string>
 #include <chrono>
 #include <thread>
@@ -13,32 +14,45 @@
 
 namespace dyr
 {
-  namespace system = boost::system;
   namespace asio  = boost::asio;
+  namespace system = boost::system;
 
   ConnectionManager::ConnectionManager(bool debug_mode_):
     resolver(io_service),
     debug_mode(debug_mode_)
   {}
 
-  void ConnectionManager::connect(
+  bool ConnectionManager::instantiate(
     std::string&& hostname,
-    std::string&& port,
-    std::string&& config_file,
-    std::string&& id_number)
+    int&& port,
+    std::string&& config_file)
   {
     system::error_code ec;
 
-    asio::ip::tcp::resolver::query tcp_query(hostname, port);
+    asio::ip::tcp::resolver::query tcp_query(hostname, std::to_string(port));
     auto endpoint_iterator = resolver.resolve(std::move(tcp_query), ec);
-    if(ec && debug_mode)
-    { logError::toFile(ec.message()); }
+    if(ec)
+    {
+      if(debug_mode)
+      {
+        logError::toFile(ec.message());
+        logError::toFile("Failed to instantiate bot with config file: \""+config_file+"\"");
+      }
+      else
+      {
+        std::cerr << "Failed to instantiate bot with config file: \"" << config_file << "\"" << std::endl;
+      }
+
+      return false;
+    }
     else
     {
-       //Construct a DyrBot
-      initialized_bots.emplace_back(new DyrBot(
-        io_service, std::move(config_file), std::move(id_number)));
-       //Attempt a connection
+      //Construct a DyrBot
+      initialized_bots.emplace_back(
+        new DyrBot(
+          io_service,
+          std::move(config_file)));
+      //Queue a connection
       initialized_bots.back()->connect(endpoint_iterator);
     }
   }
@@ -67,6 +81,10 @@ namespace dyr
         }
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      
+      //Check if any bots still exist
+      if(active_bots.size() == 0 && initialized_bots.size() == 0)
+      { break; }
     }
     if(ec)
     { logError::toFile(ec.message()); }

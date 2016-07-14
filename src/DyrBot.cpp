@@ -9,6 +9,7 @@
 #include <ctime>
 #include <string>
 #include <utility>
+#include <functional>
 #include <map>
 
 #include <boost/asio.hpp>
@@ -19,12 +20,13 @@
 #include "DyrBot.hpp"
 #include "parsers/parsers.hpp"
 #include "error/error_logger.hpp"
+#include "modules/module.hpp"
 
 namespace dyr
 {
+  namespace asio = boost::asio;
   namespace system = boost::system;
   namespace filesystem = boost::filesystem;
-  namespace asio = boost::asio;
   namespace placeholders = asio::placeholders;
 
   DyrBot::DyrBot(
@@ -46,6 +48,16 @@ namespace dyr
     var["id_number"]           = id_number;
     var["ident"]               = ">";
     var["custodian"]           = "";
+
+    //Add all module commands to r_commands
+    for(auto &module : module::ModuleManager::get()->module_vec)
+    {
+      module.init(shared_from_this());
+      for(auto &command_pair : module.commands)
+      {
+        r_commands.at(command_pair.first) = command_pair.second;
+      }
+    }
   }
 
   void DyrBot::configure()
@@ -140,7 +152,7 @@ namespace dyr
     send("USER " + var["username"] + " " + var["mode"] + " * " + " :" + var["realname"]);
   }
 
-  void DyrBot::changeNick(const std::string& nick)
+  void DyrBot::change_nick(const std::string& nick)
   {
     if(var["nickname"] == nick || nick == "")
     {
@@ -152,7 +164,7 @@ namespace dyr
       else
       {
         var["id_number"] = std::to_string(random_num());
-        var["nickname"] += "|" + var["id_number"];
+        var["nickname"] = var["username"] + "|" + var["id_number"];
       }
     }
     else
@@ -212,8 +224,13 @@ namespace dyr
 
   void DyrBot::receive()
   {
-    auto binded_receive_handler = boost::bind(&DyrBot::receive_handler, shared_from_this(),
-      placeholders::error, placeholders::iterator);
+    auto binded_receive_handler =
+      boost::bind(
+        &DyrBot::receive_handler,
+        shared_from_this(),
+        placeholders::error,
+        placeholders::iterator);
+
     recbuf.emplace();
     tcp_socket.async_receive(asio::buffer(recbuf.back()), binded_receive_handler);
     ++pending_receives;
@@ -221,8 +238,14 @@ namespace dyr
 
   void DyrBot::connect(asio::ip::tcp::resolver::iterator& endpoint_iterator)
   {
-    auto connection_handler = boost::bind(&DyrBot::connect_handler, shared_from_this(),
-      placeholders::error, placeholders::iterator); //Binded connect_handler
+    //Binded connect_handler
+    auto connection_handler =
+      boost::bind(
+        &DyrBot::connect_handler,
+        shared_from_this(),
+        placeholders::error,
+        placeholders::iterator);
+
     asio::async_connect(tcp_socket, endpoint_iterator, connection_handler);
     begin_time = std::chrono::high_resolution_clock::now();
   }
@@ -321,9 +344,9 @@ namespace dyr
       else if(message.command == "001") //RPL_WELCOME
       { join(var["default_channels"]); }
       else if(message.command == "433") //ERR_NICKNAMEINUSE
-      { changeNick(""); }
+      { change_nick(""); }
       else if(message.command == "436") //ERR_NICKCOLLISION
-      { changeNick(""); }
+      { change_nick(""); }
 
       msg_queue.pop();
     }
@@ -332,48 +355,54 @@ namespace dyr
   void DyrBot::privmsg_handler(const Message_Struct& message)
   {
     Privmsg_Struct msg(parsePrivmsg(message,var["ident"]));
-    if(!msg.command.empty())
+    for(int i(0); i < msg.command.size(); ++i)
     {
-      if(msg.command.front() == '!')
+      if(!r_commands.at(msg.command.at(i)).get().restriction(msg))
+      { r_commands.at(msg.command.at(i)).get().command(msg,i); }
+      else if(!msg.command.at(i).empty())
       {
-          if(msg.nickname == var["custodian"])
-          {
-            msg.command.erase(0,1);
-            if(msg.command == "save_config")
+        if(msg.command.at(i).front() == '!')
+        {
+            if(msg.nickname == var["custodian"])
             {
-              save_config();
-              privmsg(msg.target,"Configuration file saved!");
-            }
-            else if(msg.command == "set")
-            {
-              if(msg.arguments[""].size() >= 2)
+              msg.command.at(i).erase(0,1);
+              if(msg.command.at(i) == "save_config")
               {
-                if(msg.arguments[""].at(0) == "nickname")
-                { changeNick(msg.arguments[""].at(1)); }
-                else
+                save_config();
+                privmsg(msg.target,"Configuration file saved!");
+              }
+              else if(msg.command.at(i) == "set")
+              {
+                if(msg.arguments.at(i)[""].size() >= 2)
                 {
-                  var[msg.arguments[""].at(0)] = msg.arguments[""].at(1);
-                  privmsg(msg.target,msg.arguments[""].at(0)+" set to "+msg.arguments[""].at(1));
+                  if(msg.arguments.at(i)[""].at(0) == "nickname")
+                  { change_nick(msg.arguments.at(i)[""].at(1)); }
+                  else
+                  {
+                    var[msg.arguments.at(i)[""].at(0)] = msg.arguments.at(i)[""].at(1);
+                    privmsg(msg.target,msg.arguments.at(i)[""].at(0)+" set to "+msg.arguments.at(i)[""].at(1));
+                  }
                 }
+                else
+                { privmsg(msg.target,"Not enough parameters @"+msg.nickname); }
               }
-              else
-              { privmsg(msg.target,"Not enough parameters @"+msg.nickname); }
-            }
-            else if(msg.command == "see")
-            {
-              if(msg.arguments[""].size() >= 1)
+              /*
+              else if(msg.command.at(i) == "see")
               {
-                std::string temp;
-                for(auto& str: msg.arguments[""])
-                { temp += str + "=\"" + var[str] + "\" "; }
-                privmsg(msg.target,temp);
-              }
+                if(msg.arguments.at(i)[""].size() >= 1)
+                {
+                  std::string temp;
+                  for(auto& str: msg.arguments.at(i)[""])
+                  { temp += str + "=\"" + var[str] + "\" "; }
+                  privmsg(msg.target,temp);
+                }
+              }*/
+              else if(msg.command.at(i) == "raw")
+              { send(msg.after_command.at(i)); }
             }
-            else if(msg.command == "raw")
-            { send(msg.after_command); }
-          }
-          else
-          { privmsg(msg.target,"Must be a custodian to use '!' commands"); }
+            else
+            { privmsg(msg.target,"Must be a custodian to use '!' commands"); }
+        }
       }
     }
   }
