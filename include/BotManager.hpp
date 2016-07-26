@@ -2,7 +2,8 @@
 #define BOT_MANAGER_HPP
 
 #include <map>
-#include <vector>
+
+#include "DyrBot.hpp"
 
 namespace dyr
 {
@@ -14,7 +15,7 @@ namespace dyr
 
       int getBotCount();
 
-      bool createBot();
+      int createBot();
       bool deleteBot(int id);
 
     private:
@@ -30,4 +31,4 @@ namespace dyr
   };
 }
 
-#endif /*BOT_MANAGER_HPP
+#endif /*BOT_MANAGER_HPP*/

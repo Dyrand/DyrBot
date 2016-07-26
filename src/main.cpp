@@ -1,6 +1,11 @@
 #include <iostream>
 
+#include "BotManager.hpp"
+
 int main(int argc, char *argv[])
 {
-  std::cout << "test" << std::endl;
+  dyr::BotManager manager;
+
+  int id = manager.createBot();
+  manager.deleteBot(id);
 }
