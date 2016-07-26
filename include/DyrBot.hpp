@@ -10,7 +10,7 @@ namespace dyr
   class DyrBot
   {
     public:
-      DyrBot() = default;
+      DyrBot(const BotManager& manager_shared);
       ~DyrBot() = default;
       DyrBot(const DyrBot&) = default; //Copy Constructor
       DyrBot(DyrBot&& other) noexcept = default; //Move Constructor
@@ -18,7 +18,7 @@ namespace dyr
       DyrBot& operator=(DyrBot&& other) noexcept = default; //Move Assignment
 
     private:
-      std::weak_ptr<BotManager> manager;
+      const BotManager& manager;
   };
 }
 

@@ -25,7 +25,7 @@ namespace dyr
       std::pair<int,DyrBot> id_bot_pair(
         std::piecewise_construct,
         std::forward_as_tuple(id),
-        std::forward_as_tuple()
+        std::forward_as_tuple(*this)
       );
 
       auto emplace_status = id_bot_map.insert(std::move(id_bot_pair));

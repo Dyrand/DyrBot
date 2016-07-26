@@ -25,6 +25,7 @@ class log
     }
 
     static void toFile(const std::string& text);
+    static void toConsole(const std::string& text);
 
     static void openFile(const std::string& output_file);
     static void closeFile();
