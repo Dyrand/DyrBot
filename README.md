@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/Dyrand/DyrBot.svg?branch=refactor)](https://travis-ci.org/Dyrand/DyrBot)
 # DyrBot
 A revitalized version of IRC-Bot with support for multiple bots by utilizing multiple threads.
 
