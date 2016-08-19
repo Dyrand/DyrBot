@@ -77,4 +77,4 @@ script:
   - make
   - cd ../release
   - ~/bin/cmake ../.. -DCMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_PREFIX:PATH=~
-- make
+  - make
