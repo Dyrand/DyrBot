@@ -10,12 +10,12 @@ int main(int argc, char *argv[])
 {
   auto printHelp = [](){
     std::cout << "DyrBot is a multiplexed bot program\n\n"
-    "\nUsage:\n"
+    "Usage:\n"
     "\tdyrbot [-number_of_bots | -n <number>]"
     "\n\n"
     "Options:\n"
-    "\t-h --help        Show this screen\n"
-    "\t-n               Set the number of bots to create\n";
+    "\t-h --help      Show this screen\n"
+    "\t-n             Set the number of bots to create\n";
 
     return 1;
   };
@@ -59,6 +59,10 @@ int main(int argc, char *argv[])
       }
     }
     else if(arg == "-h" || arg == "--help")
+    {
+      return printHelp();
+    }
+    else
     {
       return printHelp();
     }
