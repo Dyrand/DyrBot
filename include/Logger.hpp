@@ -35,7 +35,7 @@ class log
     static void setSilentCreation(bool silent);
 
   private:
-    logError() = delete; //Objectless class
+    log() = delete; //Objectless class
 
     template<typename T, typename... Targs>
     static void toFileHelper(const char* format, T value, Targs... Fargs)
