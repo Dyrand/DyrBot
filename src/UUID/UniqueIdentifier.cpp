@@ -8,7 +8,7 @@
 namespace dyr
 {
   /* Static member initialization */
-  int uuid::max_uuid = 0;
+  int uuid::highest_uuid = 0;
   int uuid::current_uuid = 0;
   std::deque<int> uuid::available;
 
@@ -25,10 +25,10 @@ namespace dyr
         log::toFile("UUID{%} generated from available vector", current_uuid);
       #endif
     }
-    else if( max_uuid != std::numeric_limits<int>::max())
+    else if( highest_uuid != std::numeric_limits<int>::max())
     {
-      current_uuid = max_uuid;
-      ++max_uuid;
+      current_uuid = highest_uuid;
+      ++highest_uuid;
 
       #ifdef DEBUG
         log::toFile("UUID{%} generated from max_uuid", current_uuid);

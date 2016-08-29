@@ -4,7 +4,7 @@ project (DyrBot)
 include_directories("${PROJECT_SOURCE_DIR}/include")
 
 SET(GCC_COVERAGE_COMPILE_FLAGS "-std=c++11")
-SET(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG")
+SET(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG -DCONSOLE_OUT")
 
 IF(CMAKE_BUILD_TYPE EQUAL DEBUG)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG} -Wall")
@@ -25,6 +25,8 @@ add_executable(
   src/Logger/Logger.cpp
   src/BotManager/BotManager.cpp
   src/DyrBot/DyrBot.cpp
+  src/ConnectionManager/ConnectionManager.cpp
+  src/Parser/Parser.cpp
 )
 
 target_link_libraries(DyrBot ${Boost_LIBRARIES})

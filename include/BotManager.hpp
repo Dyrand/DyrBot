@@ -10,16 +10,21 @@ namespace dyr
   class BotManager
   {
     public:
-      BotManager()  = default;
-      ~BotManager() = default;
+      BotManager(){}
+      //BotManager(const std::string& default_config);
+      ~BotManager();
 
       int getBotCount();
 
       int createBot();
       bool deleteBot(int id);
+      bool exist(int id);
+
+      void process_loop();
 
     private:
       std::map<int, DyrBot> id_bot_map;
+      std::map<int, std::thread> id_bot_thread;
 
       int generateID();
 
