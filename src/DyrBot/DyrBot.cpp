@@ -340,6 +340,8 @@ namespace dyr
       { join(setting["default_channels"]); }
       else if(message.command == "332") //RPL_TOPIC
       {  }
+      else if(message.command == "432") //Erronoeous Nickname
+      { change_nick(); }
       else if(message.command == "433") //ERR_NICKNAMEINUSE
       { change_nick(); }
       else if(message.command == "436") //ERR_NICKCOLLISION
