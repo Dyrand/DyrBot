@@ -1,5 +1,6 @@
 #include <iostream>
 #include <limits>
+#include <thread>
 #include <string>
 #include <vector>
 #include <map>
@@ -101,10 +102,13 @@ int main(int argc, char *argv[])
   else
   { bot_manager = dyr::BotManager(); }*/
 
+  std::thread lp(dyr::ConnectionManager::process);
+
 
   for(int count = 1; count <= number_of_bots; ++count)
   { bot_manager.createBot(); }
 
   bot_manager.process_loop();
-  dyr::ConnectionManager::process();
+
+  lp.join();
 }

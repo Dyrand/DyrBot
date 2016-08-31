@@ -1,3 +1,4 @@
+#include <exception>
 #include <string>
 #include <queue>
 
@@ -20,6 +21,7 @@ namespace dyr
    )
    {
      bool partial = true;
+
      if(last_chars<2>(message) == "\r\n")
      {
        message.erase(message.end()-2, message.end());
@@ -35,6 +37,7 @@ namespace dyr
 
      //Remove partial string from message_queue if necessary and return it
      std::string partial_string;
+
      if(partial)
      {
        partial_string = message_queue.back();

@@ -2,6 +2,7 @@
 #include <utility>
 #include <vector>
 #include <thread>
+#include <chrono>
 #include <tuple>
 #include <map>
 
@@ -99,7 +100,6 @@ namespace dyr
     {
       int uuid = iter.first;
       id_bot_thread.emplace(uuid, std::thread());
-
       iter.second.request_connect_to_server();
     }
 
@@ -107,6 +107,7 @@ namespace dyr
     {
       iter.second = std::thread(&DyrBot::message_pump, &id_bot_map.at(iter.first));
       iter.second.detach();
+      std::this_thread::sleep_for(std::chrono::seconds(5));
     }
   }
 }

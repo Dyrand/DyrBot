@@ -87,6 +87,7 @@ namespace dyr
 	bool ready_to_connect;
 	bool ready_to_disconnect;
 	bool connected_to_server;
+	bool failed_connection;
 
 	int pending_receives;
 	int pending_sends;

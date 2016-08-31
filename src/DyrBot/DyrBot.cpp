@@ -1,3 +1,4 @@
+#include <exception>
 #include <iostream>
 #include <fstream>
 #include <chrono>
@@ -47,6 +48,7 @@ namespace dyr
     ready_to_connect = true;
     ready_to_disconnect = false;
     connected_to_server = false;
+    failed_connection = false;
     pending_receives = 0;
     pending_sends = 0;
 	}
@@ -61,6 +63,7 @@ namespace dyr
       #ifdef DEBUG
         log::toFile("In DyrBot::load_config");
         log::toFile("Failed to load file config file: %",config_filename);
+        failed_connection = true;
       #endif
       return false;
     }
@@ -119,6 +122,7 @@ namespace dyr
       #ifdef DEBUG
         log::toFile("In DyrBot::request_connect_to_server");
         log::toFile(ec.message());
+        disconnect();
       #endif
 
       return false;
@@ -158,6 +162,7 @@ namespace dyr
       end_time = high_res_clock::now();
       time_to_connect = end_time - begin_time;
       rng.seed(time_to_connect.count());
+      register_connection();
     }
   }
 
@@ -276,8 +281,6 @@ namespace dyr
         recbuf.front().begin()+bytes_received
       );
 
-      std::cout << "(RECEIVED):" << recv_string << std::endl;
-
       //Check if entire recv_string is partial
       if(recv_string.find("\r\n") == std::string::npos)
       {
@@ -285,10 +288,8 @@ namespace dyr
         return;
       }
 
-      std::string partial_string =
+      partial_string =
         parse::raw_message(partial_string + recv_string, unparsed_messages);
-
-      recbuf.pop();
 
       for(std::string text : unparsed_messages)
       {
@@ -298,13 +299,14 @@ namespace dyr
         messages.push(parse::irc_message(text));
       }
     }
+
+    recbuf.pop();
   }
 
 	//Loop for continually making send and receive request
 	void DyrBot::message_pump()
 	{
-    register_connection();
-    while(stay_connected || pending_sends >= 0)
+    while(stay_connected || pending_sends >= 0 && !failed_connection)
     {
       if(pending_receives <= 5 && !ready_to_disconnect)
       { request_receive(); }
