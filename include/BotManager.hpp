@@ -2,6 +2,7 @@
 #define BOT_MANAGER_HPP
 
 #include <map>
+#include <boost/thread.hpp>
 
 #include "DyrBot.hpp"
 
@@ -24,7 +25,7 @@ namespace dyr
 
     private:
       std::map<int, DyrBot> id_bot_map;
-      std::map<int, std::thread> id_bot_thread;
+      std::map<int, boost::thread> id_bot_thread;
 
       int generateID();
 

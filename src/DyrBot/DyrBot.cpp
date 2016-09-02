@@ -10,6 +10,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
+#include <boost/thread.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/system/error_code.hpp>
 
@@ -318,7 +319,7 @@ namespace dyr
          pending_sends == 0)
       { disconnect(); }
 
-      std::this_thread::sleep_for(std::chrono::milliseconds(16));
+      boost::this_thread::sleep_for(boost::chrono::milliseconds(16));
     }
 
     tcp_socket.close();

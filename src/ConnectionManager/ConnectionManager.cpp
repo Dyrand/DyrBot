@@ -6,6 +6,7 @@
 
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
+#include <boost/thread.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/make_shared.hpp>
 
@@ -63,7 +64,7 @@ namespace dyr
       io_service.poll(ec);
       io_service.reset();
 
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      boost::this_thread::sleep_for(boost::chrono::milliseconds(10));
     }
 
     if(ec)
