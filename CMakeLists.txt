@@ -33,6 +33,6 @@ target_link_libraries(DyrBot ${Boost_LIBRARIES})
 
 if(WIN32)
   target_link_libraries(DyrBot wsock32 ws2_32)
-else
+else()
   target_link_libraries(DyrBot pthread)
-endif(WIN32Z)
+endif(WIN32)
