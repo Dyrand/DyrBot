@@ -10,12 +10,14 @@
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
 
-#include "DyrBot.hpp"
+#include "DyrBotErrors.hpp"
 #include "message_struct.hpp"
 #include "privmsg_struct.hpp"
 
 namespace dyr
 {
+	class BotManager;
+
 	namespace asio   = boost::asio;
   namespace ip     = asio::ip;
 	namespace system = boost::system;
@@ -26,7 +28,11 @@ namespace dyr
 	{
 	public:
 	//Construct bot using config filename
-	DyrBot(std::string config_filename);
+	DyrBot(
+		BotManager& bot_manager_shared,
+		std::string config_filename,
+		int uuid
+	);
 
 	//Request to connect to server
 	bool request_connect_to_server();
@@ -73,14 +79,21 @@ namespace dyr
   );
 
 	void message_handler();
+	void error_handler();
 
 	void register_connection();
 	void join(const std::string& channel);
 	void part(const std::string& channel);
+	void part_all();
 
 	void change_nick();
 
 	void disconnect();
+
+	bool notify_manager_ready();
+	void notify_manager(DyrError&& error);
+
+	int uuid;
 
 	bool stay_connected;
 	bool config_loaded;
@@ -92,7 +105,7 @@ namespace dyr
 	int pending_receives;
 	int pending_sends;
 
-	//BotManager bot_manager;
+	BotManager& bot_manager;
 
 	std::queue<std::array<char, 512> > recbuf;
 	std::vector<std::string> unparsed_messages;
@@ -103,8 +116,8 @@ namespace dyr
 	ip::tcp::socket tcp_socket;
 
 	std::map<std::string, std::string> setting;
-
-	std::string config_filename;
+	std::map<std::string, bool> status;
+	std::queue<system::error_code> error_queue;
 
 	std::default_random_engine rng;
 	high_res_clock::time_point begin_time;

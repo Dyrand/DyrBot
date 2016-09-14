@@ -2,9 +2,11 @@
 #define BOT_MANAGER_HPP
 
 #include <map>
-#include <boost/thread.hpp>
+#include <queue>
+#include <mutex>
 
 #include "DyrBot.hpp"
+#include "DyrBotErrors.hpp"
 
 namespace dyr
 {
@@ -21,11 +23,21 @@ namespace dyr
       bool deleteBot(int id);
       bool exist(int id);
 
+      void connectBots();
       void process_loop();
 
+      void notify_ready(const int& id);
+
+      void append_error(const int& id, DyrError&& error);
+      void process_error();
+
     private:
+      std::mutex mtx;
+
       std::map<int, DyrBot> id_bot_map;
-      std::map<int, boost::thread> id_bot_thread;
+      std::map<int, std::thread> id_bot_thread;
+
+      std::queue<std::pair<int, DyrError> > bot_errors;
 
       int generateID();
 

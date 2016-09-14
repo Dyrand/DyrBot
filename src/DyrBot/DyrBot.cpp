@@ -10,13 +10,15 @@
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
-#include <boost/thread.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/system/error_code.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "ConnectionManager.hpp"
+#include "BotManager.hpp"
 #include "Logger.hpp"
 #include "DyrBot.hpp"
+#include "DyrBotErrors.hpp"
 #include "Parser.hpp"
 #include "message_struct.hpp"
 #include "privmsg_struct.hpp"
@@ -31,25 +33,32 @@ namespace dyr
   typedef std::chrono::high_resolution_clock high_res_clock;
 
 	//Construct bot using config filename
-	DyrBot::DyrBot(std::string config_filename):
+	DyrBot::DyrBot(
+    BotManager& bot_manager_shared,
+    std::string config_filename,
+    int id
+  ):
+    uuid(id),
+    bot_manager(bot_manager_shared),
     tcp_socket(ConnectionManager::get_io_service())
 	{
-    this->config_filename = config_filename;
+    setting["config_filename"] = config_filename;
+
 		initialize_status();
 
 		if(!load_config())
     { load_default_settings(); }
-	}
+  }
+
 
 	//Initialize status variables
 	void DyrBot::initialize_status()
 	{
-    stay_connected = true;
-		config_loaded = false;
-    ready_to_connect = true;
-    ready_to_disconnect = false;
-    connected_to_server = false;
-    failed_connection = false;
+		status["config_loaded"] = false;
+    status["connected_to_server"] = false;
+    status["ready_to_send"] = false;
+    status["ready_to_receive"] = false;
+    status["request_to_disconnect"] = false;
     pending_receives = 0;
     pending_sends = 0;
 	}
@@ -57,21 +66,20 @@ namespace dyr
 	//Load config file
 	bool DyrBot::load_config()
 	{
-		std::ifstream config_in(config_filename);
+		std::ifstream config_in(setting["config_filename"]);
 
 		if(config_in.fail())
 		{
       #ifdef DEBUG
-        log::toFile("In DyrBot::load_config");
-        log::toFile("Failed to load file config file: %",config_filename);
-        failed_connection = true;
+        log::toFile("In DyrBot::load_config for bot {%}", uuid);
+        log::toFile("Failed to load config file: %", setting["config_filename"]);
       #endif
+
+      notify_manager(DyrError::load_config);
       return false;
     }
 
-		std::string line;
-		std::string key;
-		std::string value;
+		std::string line, key, value;
 
 		config_in >> line;
 
@@ -87,13 +95,15 @@ namespace dyr
 		if(!config_in.eof())
 		{
       #ifdef DEBUG
-        log::toFile("In DyrBot::load_config");
-        log::toFile("Failed to load file config file: %",config_filename);
+        log::toFile("In DyrBot::load_config for bot {%}", uuid);
+        log::toFile("Failed to load config file: %", setting["config_filename"]);
       #endif
+
+      notify_manager(DyrError::load_config);
       return false;
     }
 
-		config_loaded = true;
+    status["config_loaded"] = true;
 		return true;
 	}
 
@@ -102,12 +112,12 @@ namespace dyr
     setting["hostname"]            = "irc.freenode.com";
     setting["port"]                = "6667";
     setting["connection_password"] = "password";
+    setting["default_channels"]    = "#dyrbot";
     setting["nickname"]            = "DyrBot";
     setting["username"]            = "DyrBot";
-    setting["mode"]                = "0";
     setting["realname"]            = "DyrBot";
-    setting["default_channels"]    = "#dyrbot";
-    setting["ident"]               = ">";
+    setting["mode"]                = "0";
+    setting["command_ident"]       = ">";
   }
 
 	//Request to connect to server
@@ -123,9 +133,10 @@ namespace dyr
       #ifdef DEBUG
         log::toFile("In DyrBot::request_connect_to_server");
         log::toFile(ec.message());
-        disconnect();
       #endif
 
+      error_queue.push(std::move(ec));
+      notify_manager(DyrError::request_connect_to_server);
       return false;
     }
 
@@ -156,13 +167,22 @@ namespace dyr
         log::toFile("DyrBot::connect_handler");
         log::toFile(error.message());
       #endif
+
+      error_queue.push(std::move(error));
+      notify_manager(DyrError::connect_handler);
     }
     else
     {
-      connected_to_server = true;
+      status["connected_to_server"] = true;
+      status["ready_to_send"] = true;
+      status["ready_to_receive"] = true;
+
       end_time = high_res_clock::now();
       time_to_connect = end_time - begin_time;
       rng.seed(time_to_connect.count());
+
+      notify_manager_ready();
+
       register_connection();
     }
   }
@@ -170,7 +190,7 @@ namespace dyr
 	//Request to send message asynchronously to server
 	void DyrBot::request_send(const std::string& message)
 	{
-    if(ready_to_disconnect)
+    if(!status["ready_to_send"])
     {return;}
 
     #ifdef CONSOLE_OUT
@@ -199,7 +219,7 @@ namespace dyr
   //Request to send message asynchronously to server
   void DyrBot::request_send(std::string&& message)
   {
-    if(ready_to_disconnect)
+    if(!status["ready_to_send"])
     {return;}
 
     #ifdef CONSOLE_OUT
@@ -231,19 +251,23 @@ namespace dyr
 	)
   {
     --pending_sends;
+
     if(ec)
     {
       #ifdef DEBUG
         log::toFile("In DyrBot::send_handler");
         log::toFile(ec.message());
       #endif
+
+      error_queue.push(std::move(ec));
+      notify_manager(DyrError::send_handler);
     }
   }
 
   //Request to receive message asynchronously from server
 	void DyrBot::request_receive()
 	{
-    if(ready_to_disconnect)
+    if(!status["ready_to_receive"])
     {return;}
 
     auto binded_receive_handler =
@@ -274,6 +298,9 @@ namespace dyr
         log::toFile("In DyrBot::receive_handler");
         log::toFile(ec.message());
       #endif
+
+      error_queue.push(std::move(ec));
+      notify_manager(DyrError::receive_handler);
     }
     else
     {
@@ -307,22 +334,23 @@ namespace dyr
 	//Loop for continually making send and receive request
 	void DyrBot::message_pump()
 	{
-    while(stay_connected || pending_sends >= 0 && !failed_connection)
+    while(status["connected_to_server"])
     {
-      if(pending_receives <= 5 && !ready_to_disconnect)
+      if(pending_receives <= 5 && !status["request_to_disconnect"])
       { request_receive(); }
 
       message_handler();
+      error_handler();
 
-      if(ready_to_disconnect &&
-         pending_receives == 0 &&
-         pending_sends == 0)
+      std::this_thread::sleep_for(std::chrono::milliseconds(16));
+
+      if(status["request_to_disconnect"] &&
+         (pending_receives == 0) &&
+         (pending_sends == 0))
       { disconnect(); }
-
-      boost::this_thread::sleep_for(boost::chrono::milliseconds(16));
     }
 
-    tcp_socket.close();
+    log::toFile("Bot {%} message_pump ended", uuid);
   }
 
   void DyrBot::message_handler()
@@ -352,6 +380,13 @@ namespace dyr
     }
   }
 
+  void DyrBot::error_handler()
+  {
+    //Needs real implementation
+    while(!error_queue.empty())
+    { error_queue.pop(); }
+  }
+
   void DyrBot::register_connection()
   {
     request_send("PASS " + setting["connection_password"]);
@@ -370,6 +405,12 @@ namespace dyr
     request_send("PART " + channel);
   }
 
+  void DyrBot::part_all()
+  {
+    for(auto& channel: channels)
+    { part(channel); }
+  }
+
   void DyrBot::change_nick()
   {
     static std::string nick("NICK ");
@@ -384,13 +425,29 @@ namespace dyr
 
   void DyrBot::request_disconnect()
   {
-    ready_to_disconnect = true;
-    stay_connected = false;
+    part_all();
+
+    status["request_to_disconnect"] = true;
+    status["ready_to_send"] = false;
+    status["ready_to_receive"] = false;
   }
 
   void DyrBot::disconnect()
   {
-    for(auto& channel: channels)
-    { part(channel); }
+    boost::system::error_code ec;
+    tcp_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+    tcp_socket.close();
+    status["connected_to_server"] = false;
+  }
+
+  bool DyrBot::notify_manager_ready()
+  {
+    bot_manager.notify_ready(uuid);
+    return true;
+  }
+
+  void DyrBot::notify_manager(DyrError&& error)
+  {
+    bot_manager.append_error(uuid, std::move(error));
   }
 }

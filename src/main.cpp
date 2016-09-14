@@ -5,8 +5,6 @@
 #include <vector>
 #include <map>
 
-#include <boost/thread.hpp>
-
 #include "ConnectionManager.hpp"
 #include "BotManager.hpp"
 
@@ -104,13 +102,14 @@ int main(int argc, char *argv[])
   else
   { bot_manager = dyr::BotManager(); }*/
 
-  boost::thread lp(dyr::ConnectionManager::process);
+  std::thread lp(dyr::ConnectionManager::process);
 
 
   for(int count = 1; count <= number_of_bots; ++count)
   { bot_manager.createBot(); }
 
-  bot_manager.process_loop();
+  bot_manager.connectBots();
+  //bot_manager.process_loop();
 
   lp.join();
 }

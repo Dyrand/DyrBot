@@ -4,15 +4,15 @@
 #include <thread>
 #include <chrono>
 #include <tuple>
+#include <mutex>
 #include <map>
-
-#include <boost/chrono.hpp>
 
 #include "UniqueIdentifier.hpp"
 #include "Logger.hpp"
 #include "BotManager.hpp"
 #include "ConnectionManager.hpp"
 #include "DyrBot.hpp"
+#include "DyrBotErrors.hpp"
 
 namespace dyr
 {
@@ -39,7 +39,7 @@ namespace dyr
       std::pair<int,DyrBot> id_bot_pair(
         std::piecewise_construct,
         std::forward_as_tuple(id),
-        std::forward_as_tuple("config/config.txt")
+        std::forward_as_tuple(*this, "config/config.txt", id)
       );
 
       auto emplace_status = id_bot_map.insert(std::move(id_bot_pair));
@@ -96,20 +96,45 @@ namespace dyr
     return bot_existance;
   }
 
-  void BotManager::process_loop()
+  void BotManager::connectBots()
   {
     for(auto& iter: id_bot_map)
     {
       int uuid = iter.first;
-      id_bot_thread.emplace(uuid, boost::thread());
+      id_bot_thread.emplace(uuid, std::thread());
       iter.second.request_connect_to_server();
     }
 
     for(auto& iter: id_bot_thread)
     {
-      iter.second = boost::thread(&DyrBot::message_pump, &id_bot_map.at(iter.first));
+      iter.second = std::thread(&DyrBot::message_pump, &id_bot_map.at(iter.first));
       iter.second.detach();
-      boost::this_thread::sleep_for(boost::chrono::seconds(5));
+      std::this_thread::sleep_for(std::chrono::seconds(5));
     }
+  }
+
+  void BotManager::notify_ready(const int& id)
+  {
+    id_bot_thread.at(id) = std::thread(&DyrBot::message_pump, &id_bot_map.at(id));
+    id_bot_thread.at(id).detach();
+  }
+
+  void BotManager::process_loop()
+  {
+    //std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+
+  void BotManager::append_error(const int& id, DyrError&& error)
+  {
+    bot_errors.emplace(id, error);
+    process_error();
+  }
+
+  void BotManager::process_error()
+  {
+    //Needs real implementation
+    mtx.lock();
+    bot_errors.pop();
+    mtx.unlock();
   }
 }
