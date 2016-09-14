@@ -11,7 +11,7 @@
 int main(int argc, char *argv[])
 {
   auto printHelp = [](){
-    std::cout << "DyrBot is a multiplexed bot program\n\n"
+    std::cout << "DyrBot is a multiplexed IRC bot program\n\n"
     "Usage:\n"
     "\tdyrbot [-number_of_bots | -n <number>] [-default_config | -dc]"
     "\n\n"

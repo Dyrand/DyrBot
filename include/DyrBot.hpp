@@ -8,6 +8,7 @@
 #include <map>
 
 #include <boost/asio.hpp>
+#include <boost/array.hpp>
 #include <boost/system/error_code.hpp>
 
 #include "DyrBotErrors.hpp"
@@ -107,7 +108,7 @@ namespace dyr
 
 	BotManager& bot_manager;
 
-	std::queue<std::array<char, 512> > recbuf;
+	std::queue<boost::array<char, 512> > recbuf;
 	std::vector<std::string> unparsed_messages;
 	std::queue<irc_message_struct> messages;
 
