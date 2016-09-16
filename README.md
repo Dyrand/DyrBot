@@ -1,5 +1,4 @@
-[![Build Status](https://travis-ci.org/Dyrand/DyrBot.svg?branch=master)](https://travis-ci.org/Dyrand/DyrBot)
-# DyrBot
+# DyrBot [![Build Status](https://travis-ci.org/Dyrand/DyrBot.svg?branch=master)](https://travis-ci.org/Dyrand/DyrBot)
 A revitalized version of IRC-Bot with support for multiple bots by utilizing multiple threads.
 
 * [Dependencies](#dependencies)
