@@ -20,4 +20,5 @@ In the directory where the source is located:
 mkdir build
 cd build
 cmake ..
+make
 ```
