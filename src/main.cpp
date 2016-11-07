@@ -5,13 +5,15 @@
 #include <vector>
 #include <map>
 
+#include <boost/thread.hpp>
+
 #include "ConnectionManager.hpp"
 #include "BotManager.hpp"
 
 int main(int argc, char *argv[])
 {
   auto printHelp = [](){
-    std::cout << "DyrBot is a multiplexed IRC bot program\n\n"
+    std::cout << "DyrBot is a multithreaded IRC bot\n\n"
     "Usage:\n"
     "\tdyrbot [-number_of_bots | -n <number>] [-default_config | -dc]"
     "\n\n"
@@ -102,7 +104,7 @@ int main(int argc, char *argv[])
   else
   { bot_manager = dyr::BotManager(); }*/
 
-  std::thread lp(dyr::ConnectionManager::process);
+  boost::thread lp(dyr::ConnectionManager::process);
 
 
   for(int count = 1; count <= number_of_bots; ++count)

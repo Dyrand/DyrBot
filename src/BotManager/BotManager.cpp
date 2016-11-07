@@ -1,11 +1,11 @@
 #include <iostream>
 #include <utility>
 #include <vector>
-#include <thread>
-#include <chrono>
 #include <tuple>
-#include <mutex>
 #include <map>
+
+#include <boost/thread.hpp>
+#include <boost/chrono.hpp>
 
 #include "UniqueIdentifier.hpp"
 #include "Logger.hpp"
@@ -101,21 +101,21 @@ namespace dyr
     for(auto& iter: id_bot_map)
     {
       int uuid = iter.first;
-      id_bot_thread.emplace(uuid, std::thread());
+      id_bot_thread.emplace(uuid, boost::thread());
       iter.second.request_connect_to_server();
     }
 
     for(auto& iter: id_bot_thread)
     {
-      iter.second = std::thread(&DyrBot::message_pump, &id_bot_map.at(iter.first));
+      iter.second = boost::thread(&DyrBot::message_pump, &id_bot_map.at(iter.first));
       iter.second.detach();
-      std::this_thread::sleep_for(std::chrono::seconds(5));
+      boost::this_thread::sleep_for(boost::chrono::seconds(5));
     }
   }
 
   void BotManager::notify_ready(const int& id)
   {
-    id_bot_thread.at(id) = std::thread(&DyrBot::message_pump, &id_bot_map.at(id));
+    id_bot_thread.at(id) = boost::thread(&DyrBot::message_pump, &id_bot_map.at(id));
     id_bot_thread.at(id).detach();
   }
 

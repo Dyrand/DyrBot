@@ -3,13 +3,13 @@
 
 #include <string>
 #include <random>
-#include <chrono>
 #include <queue>
 #include <map>
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
 #include <boost/system/error_code.hpp>
+#include <boost/chrono.hpp>
 
 #include "DyrBotErrors.hpp"
 #include "message_struct.hpp"
@@ -20,10 +20,10 @@ namespace dyr
 	class BotManager;
 
 	namespace asio   = boost::asio;
-  namespace ip     = asio::ip;
+	namespace ip     = asio::ip;
 	namespace system = boost::system;
 
-	typedef std::chrono::high_resolution_clock high_res_clock;
+	typedef boost::chrono::high_resolution_clock high_res_clock;
 
 	class DyrBot
 	{
@@ -62,7 +62,7 @@ namespace dyr
 
 	//Request to send message asynchronously to server
 	void request_send(const std::string& message);
-  void request_send(std::string&& message);
+	void request_send(std::string&& message);
 
 	//Callback for request_send
 	void send_handler(
@@ -122,8 +122,8 @@ namespace dyr
 
 	std::default_random_engine rng;
 	high_res_clock::time_point begin_time;
-  high_res_clock::time_point end_time;
-  high_res_clock::duration   time_to_connect;
+	high_res_clock::time_point end_time;
+	high_res_clock::duration   time_to_connect;
 	};
 }
 

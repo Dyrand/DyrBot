@@ -1,10 +1,8 @@
 #include <exception>
 #include <iostream>
 #include <fstream>
-#include <chrono>
 #include <random>
 #include <memory>
-#include <thread>
 #include <vector>
 #include <string>
 
@@ -13,6 +11,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/thread.hpp>
+#include <boost/chrono.hpp>
 
 #include "ConnectionManager.hpp"
 #include "BotManager.hpp"
@@ -30,7 +30,7 @@ namespace dyr
   namespace system = boost::system;
   namespace placeholders = asio::placeholders;
 
-  typedef std::chrono::high_resolution_clock high_res_clock;
+  typedef boost::chrono::high_resolution_clock high_res_clock;
 
 	//Construct bot using config filename
 	DyrBot::DyrBot(
@@ -342,7 +342,7 @@ namespace dyr
       message_handler();
       error_handler();
 
-      std::this_thread::sleep_for(std::chrono::milliseconds(16));
+      boost::this_thread::sleep_for(boost::chrono::milliseconds(16));
 
       if(status["request_to_disconnect"] &&
          (pending_receives == 0) &&

@@ -1,9 +1,11 @@
 #ifndef BOT_MANAGER_HPP
 #define BOT_MANAGER_HPP
 
-#include <map>
 #include <queue>
 #include <mutex>
+#include <map>
+
+#include <boost/thread.hpp>
 
 #include "DyrBot.hpp"
 #include "DyrBotErrors.hpp"
@@ -32,10 +34,10 @@ namespace dyr
       void process_error();
 
     private:
-      std::mutex mtx;
+      boost::mutex mtx;
 
       std::map<int, DyrBot> id_bot_map;
-      std::map<int, std::thread> id_bot_thread;
+      std::map<int, boost::thread> id_bot_thread;
 
       std::queue<std::pair<int, DyrError> > bot_errors;
 
