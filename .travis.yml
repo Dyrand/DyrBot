@@ -17,34 +17,16 @@ addons:
     # add PPAs with more up-to-date toolchains
     - ubuntu-toolchain-r-test
     - llvm-toolchain-precise-3.6
+    - george-edison55/cmake-3.x
     packages:
     # install toolchains
     - gcc-5
     - g++-5
     - clang-3.6
-
-install:
-  # Install newer boost compatible with gcc 4.8.
-  - wget --no-verbose --output-document=boost-trunk.tar.bz2 http://sourceforge.net/projects/boost/files/boost/1.55.0/boost_1_55_0.tar.bz2/download
-  - export BOOST_ROOT="$TRAVIS_BUILD_DIR/../boost-trunk"
-  - export CMAKE_MODULE_PATH="$BOOST_ROOT"
-  - mkdir -p $BOOST_ROOT
-  - tar jxf boost-trunk.tar.bz2 --strip-components=1 -C $BOOST_ROOT
-  - (cd $BOOST_ROOT; ./bootstrap.sh --with-libraries=date_time,filesystem,system,thread,exception,program_options,date_time)
-  - (cd $BOOST_ROOT; ./b2 threading=multi --prefix=$BOOST_ROOT -d0 install)
-  # Install cmake
-  - CMAKE_VERSION="3.6.1"
-  - wget "http://www.cmake.org/files/v3.6/cmake-${CMAKE_VERSION}.tar.gz"
-  - openssl sha1 "cmake-${CMAKE_VERSION}.tar.gz"
-  - tar xf "cmake-${CMAKE_VERSION}.tar.gz"
-  - cd "cmake-${CMAKE_VERSION}"
-  - ./bootstrap --prefix=~
-  - make
-  - make install
-  - export PATH="~/bin:${PATH}"
-  - cd ..
-  # Install dependencies.
-  - sudo apt-get install libboost-dev libboost-regex-dev
+    # install cmake
+    - cmake
+    # install boost
+    - libboost-dev-all
 
 script:
   - mkdir build
