@@ -1,5 +1,5 @@
 # Ubuntu 14.04 Trusty support
-sudo: required
+sudo: false
 dist: trusty
 
 language: cpp
@@ -7,45 +7,30 @@ language: cpp
 compiler:
   - clang
 
-before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq
-
 addons:
   apt:
     sources:
     # add PPAs with more up-to-date toolchains
     - ubuntu-toolchain-r-test
     - llvm-toolchain-precise-3.6
+    - kalakris-cmake
     packages:
     # install toolchains
     - gcc-5
     - g++-5
     - clang-3.6
+    - cmake
     # install boost
     - libboost1.55-all-dev
     
-install:
-  # Install cmake
-  - CMAKE_VERSION="3.6.1"
-  - wget "http://www.cmake.org/files/v3.6/cmake-${CMAKE_VERSION}.tar.gz"
-  - openssl sha1 "cmake-${CMAKE_VERSION}.tar.gz"
-  - tar xf "cmake-${CMAKE_VERSION}.tar.gz"
-  - cd "cmake-${CMAKE_VERSION}"
-  - ./bootstrap --prefix=~
-  - make
-  - make install
-  - export PATH="~/bin:${PATH}"
-  - cd ..
-
 script:
   - mkdir build
   - cd build
   - mkdir debug
   - mkdir release
   - cd debug
-  - ~/bin/cmake ../.. -DCMAKE_BUILD_TYPE=debug -DCMAKE_INSTALL_PREFIX:PATH=~
+  - cmake ../.. -DCMAKE_BUILD_TYPE=debug
   - make
   - cd ../release
-  - ~/bin/cmake ../.. -DCMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_PREFIX:PATH=~
+  - cmake ../.. -DCMAKE_BUILD_TYPE=release
   - make
