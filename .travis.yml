@@ -17,8 +17,6 @@ addons:
     # add PPAs with more up-to-date toolchains
     - ubuntu-toolchain-r-test
     - llvm-toolchain-precise-3.6
-    - george-edison55/cmake-3.x
-    - universe
     packages:
     # install toolchains
     - gcc-5
@@ -27,7 +25,7 @@ addons:
     # install cmake
     - cmake
     # install boost
-    - libboost-dev-all
+    - libboost1.55-all-dev
 
 script:
   - mkdir build
