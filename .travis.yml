@@ -18,6 +18,7 @@ addons:
     - ubuntu-toolchain-r-test
     - llvm-toolchain-precise-3.6
     - george-edison55/cmake-3.x
+    - universe
     packages:
     # install toolchains
     - gcc-5
