@@ -12,34 +12,34 @@ std::ofstream log::fileout(filename);
 
 void log::toFile(const std::string& text)
 {
-  auto t = std::time(nullptr);
-  auto tm = *std::localtime(&t);
-  fileout << std::put_time(&tm, "{%d-%m-%Y %H:%M:%S} ") << text << "\n";
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+    fileout << std::put_time(&tm, "{%d-%m-%Y %H:%M:%S} ") << text << "\n";
 }
 
 void log::toConsole(const std::string& text)
 {
-  std::cout << text << "\n";
+    std::cout << text << "\n";
 }
 
 void log::openFile(const std::string& output_file)
 {
-  if(!silentCreation)
-  { toFile("Log opened"); }
+    if(!silentCreation)
+    { toFile("Log opened"); }
 
-  fileout.close();
-  fileout.open(output_file);
+    fileout.close();
+    fileout.open(output_file);
 }
 
 void log::closeFile()
 {
-  if(!silentCreation)
-  { toFile("Log closed"); }
+    if(!silentCreation)
+    { toFile("Log closed"); }
 
-  fileout.close();
+    fileout.close();
 }
 
 void log::setSilentCreation(bool silent)
 {
-  silentCreation = silent;
+    silentCreation = silent;
 }
