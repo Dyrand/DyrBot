@@ -44,6 +44,7 @@ namespace dyr
  {
      setting["config_filename"] = config_filename;
      initialize_status();
+     initialize_privmsg_commands();
       
      if(!load_config())
      { load_default_settings(); }
@@ -60,6 +61,16 @@ namespace dyr
      status["request_to_disconnect"] = false;
      pending_receives = 0;
      pending_sends = 0;
+ }
+ 
+ //Map strings to privmsg functions
+ void DyrBot::initialize_privmsg_commands()
+ {
+     command["meta_command"] = meta_command;
+     command["part_all"] = part_all;
+     command["disconnect"] = disconnect;
+     command["request_disconnect"] = request_disconnect;
+     //command["alias_command"] = alias_command;
  }
 
  //Load config file
@@ -164,10 +175,12 @@ namespace dyr
      }
      else
      {
+         log::toFile("Bot {%} connected succesful", bot_id);
+         
          status["connected_to_server"] = true;
          status["ready_to_send"] = true;
          status["ready_to_receive"] = true;
-
+         
          end_time = high_res_clock::now();
          time_to_connect = end_time - begin_time;
          rng.seed(time_to_connect.count());
@@ -266,6 +279,7 @@ namespace dyr
       ++pending_receives;
  }
 
+ 
  //Callback for request_send
  void DyrBot::receive_handler(
   const boost::system::error_code& ec,
@@ -277,7 +291,7 @@ namespace dyr
      --pending_receives;
      if(ec)
      {
-         log::toFile("In DyrBot::receive_handler");
+         log::toFile("In DyrBot::receive_handler for Bot {%}", bot_id);
          log::toFile(ec.message());
 
          error_queue.push(std::move(ec));
@@ -312,7 +326,7 @@ namespace dyr
 
  //Loop for continually making send and receive request
  void DyrBot::message_pump()
- {
+ {     
      while(status["connected_to_server"])
      {
          if(pending_receives <= 5 && !status["request_to_disconnect"])
@@ -324,7 +338,6 @@ namespace dyr
         boost::this_thread::sleep_for(boost::chrono::milliseconds(16));
 
         if(status["request_to_disconnect"] &&
-          (pending_receives == 0) &&
           (pending_sends == 0))
         { disconnect(); }
      }
@@ -338,24 +351,24 @@ namespace dyr
      {
          irc_message_struct message = messages.front();
 
-        if(message.command == "PING")
-        { request_send("PONG " + message.parameters); }
-        else if(message.command == "NOTICE")
-        { /*notify_subs();*/ }
-        else if(message.command == "PRIVMSG")
-        { /*privmsg_handler(message);*/ }
-        else if(message.command == "001") //RPL_WELCOME
-        { join(setting["default_channels"]); }
-        else if(message.command == "332") //RPL_TOPIC
-        {  }
-        else if(message.command == "432") //Erronoeous Nickname
-        { change_nick(); }
-        else if(message.command == "433") //ERR_NICKNAMEINUSE
-        { change_nick(); }
-        else if(message.command == "436") //ERR_NICKCOLLISION
-        { change_nick(); }
+         if(message.command == "PING")
+         { request_send("PONG " + message.parameters); }
+         else if(message.command == "NOTICE")
+         { /*notify_subs();*/ }
+         else if(message.command == "PRIVMSG")
+         { privmsg_handler(message); }
+         else if(message.command == "001") //RPL_WELCOME
+         { join(setting["default_channels"]); }
+         else if(message.command == "332") //RPL_TOPIC
+         {  }
+         else if(message.command == "432") //ERR_ERRONEUSNICKNAME
+         { change_nick(); }
+         else if(message.command == "433") //ERR_NICKNAMEINUSE
+         { change_nick(); }
+         else if(message.command == "436") //ERR_NICKCOLLISION
+         { change_nick(); }
         
-        messages.pop();
+         messages.pop();
     }
  }
 
@@ -384,10 +397,15 @@ namespace dyr
      request_send("PART " + channel);
  }
 
- void DyrBot::part_all()
+ void DyrBot::part_all(const irc_message_struct* message, irc_privmsg_struct* privmsg)
  {
      for(auto& channel: channels)
      { part(channel); }
+ }
+ 
+ void DyrBot::privmsg(std::string target, std::string message)
+ {
+     request_send("PRIVMSG " + target + " :" + message);
  }
 
  void DyrBot::change_nick()
@@ -395,14 +413,61 @@ namespace dyr
      static std::string nick("NICK ");
      
      std::string nickname;
-     nickname += (rng()%76)+48;
-     for(int i(1); i <= 8; ++i)
-     { nickname += (rng()%76)+48; }
+
+     for(int i(0); i < 8; ++i)
+     { nickname += ((rng()%26)+65)+(32*(rng()%2)); }
 
      request_send(nick + nickname);
  }
+ 
+ void DyrBot::privmsg_handler(const irc_message_struct& message)
+ {
+     irc_privmsg_struct privmsg = parse::irc_privmsg(message, setting["command_ident"]);
+     
+     for(auto current_command : privmsg.command)
+     {
+         if(command.count(current_command))
+         { command[current_command](this, &message, &privmsg); }
+     }
+ }
+ 
+ void DyrBot::meta_command(const irc_message_struct* irc_message, irc_privmsg_struct* irc_privmsg)
+ {
+     std::string message;
+     
+     message += "nickname:";
+     message += irc_privmsg->nickname;
+     message += " username:";
+     message += irc_privmsg->username;
+     message += " target:";
+     message += irc_privmsg->target;
+     message += " ident:";
+     message += irc_privmsg->ident;
+     
+     for(unsigned int i(0); i < irc_privmsg->command.size(); ++i)
+     {
+        message += " command[";
+        message += std::to_string(i);
+        message += "]:";
+        message += irc_privmsg->command[i];
+        message += "{";
+        for(auto j: irc_privmsg->arguments[i])
+        {
+            message += "|";
+            message += j.first;
+            for(auto k: j.second)
+            {
+                message += " ";
+                message += k;
+            }
+        }
+        message += "}";
+     }
+        
+     privmsg(irc_privmsg->target, message);
+ }
 
- void DyrBot::request_disconnect()
+ void DyrBot::request_disconnect(const irc_message_struct* message, irc_privmsg_struct* privmsg)
  {
      part_all();
 
@@ -411,7 +476,7 @@ namespace dyr
      status["ready_to_receive"] = false;
  }
 
- void DyrBot::disconnect()
+ void DyrBot::disconnect(const irc_message_struct* message, irc_privmsg_struct* privmsg)
  {
      boost::system::error_code ec;
      tcp_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);

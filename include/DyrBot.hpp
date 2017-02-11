@@ -1,6 +1,7 @@
 #ifndef DYRBOT_HPP
 #define DYRBOT_HPP
 
+#include <functional>
 #include <string>
 #include <random>
 #include <queue>
@@ -28,6 +29,8 @@ namespace dyr
  class DyrBot
  {
      public:
+         typedef std::function<void(DyrBot*, const irc_message_struct*, irc_privmsg_struct*)> privmsg_function;
+         
          //Construct bot using config filename
          DyrBot(
              int id,
@@ -38,16 +41,18 @@ namespace dyr
          //Request to connect to server
          bool request_connect_to_server();
 
-         void request_disconnect();
+         void request_disconnect(const irc_message_struct* irc_message = nullptr, irc_privmsg_struct* irc_privmsg = nullptr);
 
          //Loop for continually making send and receive request
          void message_pump();
 
-         private:
-
+     private:
          //Initialize status variables
          void initialize_status();
-
+         
+         //Map strings to privmsg functions
+         void initialize_privmsg_commands();
+         
          //Load config file
          bool load_config();
 
@@ -85,11 +90,15 @@ namespace dyr
          void register_connection();
          void join(const std::string& channel);
          void part(const std::string& channel);
-         void part_all();
+         void part_all(const irc_message_struct* irc_message = nullptr, irc_privmsg_struct* irc_privmsg = nullptr);
+         void privmsg(std::string target, std::string message);
 
          void change_nick();
+         void privmsg_handler(const irc_message_struct& message);
+         
+         void meta_command(const irc_message_struct* irc_message, irc_privmsg_struct* irc_privmsg);
 
-         void disconnect();
+         void disconnect(const irc_message_struct* irc_message = nullptr, irc_privmsg_struct* irc_privmsg = nullptr);
 
          bool notify_manager_ready();
          void notify_manager(DyrError&& error);
@@ -116,6 +125,7 @@ namespace dyr
 
          ip::tcp::socket tcp_socket;
 
+         std::map<std::string, privmsg_function> command;
          std::map<std::string, std::string> setting;
          std::map<std::string, bool> status;
          std::queue<system::error_code> error_queue;
@@ -124,7 +134,7 @@ namespace dyr
          high_res_clock::time_point begin_time;
          high_res_clock::time_point end_time;
          high_res_clock::duration   time_to_connect;
-};
+ };
 }
 
 #endif /*DYRBOT_HPP*/

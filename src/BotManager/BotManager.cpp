@@ -46,12 +46,13 @@ namespace dyr
      if( bot_id != -1 )
      {
          std::pair<int,DyrBot> id_bot_pair(
-          std::piecewise_construct,
-          std::forward_as_tuple(bot_id),
-          std::forward_as_tuple(bot_id, *this, config_file)
+          
          );
 
-         id_bot_map.insert(std::move(id_bot_pair));
+         id_bot_map.emplace(
+          std::piecewise_construct,
+          std::forward_as_tuple(bot_id),
+          std::forward_as_tuple(bot_id, *this, config_file));
 
          log::toFile("Created DyrBot with ID{%}", bot_id);
      }
@@ -103,13 +104,6 @@ namespace dyr
          int bot_id = iter.first;
          id_bot_thread.emplace(bot_id, boost::thread());
          iter.second.request_connect_to_server();
-     }
-
-     for(auto& iter: id_bot_thread)
-     {
-         iter.second = boost::thread(&DyrBot::message_pump, &id_bot_map.at(iter.first));
-         iter.second.detach();
-         boost::this_thread::sleep_for(boost::chrono::milliseconds(delay));
      }
  }
 
