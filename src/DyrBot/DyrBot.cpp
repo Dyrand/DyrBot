@@ -164,7 +164,7 @@ namespace dyr
      {
          #ifdef DEBUG
           log::toFile("DyrBot::connect_handler");
-          sslog::toFile(error.message());
+          log::toFile(error.message());
          #endif
 
          error_queue.push(std::move(error));

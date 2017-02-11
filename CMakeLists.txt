@@ -14,7 +14,7 @@ endif(CMAKE_BUILD_TYPE EQUAL DEBUG)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COVERAGE_COMPILE_FLAGS}" )
 
 #Find Boost
-find_package(Boost REQUIRED COMPONENTS system thread filesystem chrono)
+find_package(Boost REQUIRED COMPONENTS system thread filesystem chrono program_options)
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 
 add_executable(

@@ -7,15 +7,15 @@
 
 namespace dyr
 {
-  struct irc_privmsg_struct
-  {
-    std::string nickname;
-    std::string username;
-    std::string target;
-    std::string ident;
-    std::vector<std::string> command;
-    std::vector<std::string> after_command;
-    std::vector<std::map<std::string,std::vector<std::string> > > arguments;
+ struct irc_privmsg_struct
+ {
+     std::string nickname;
+     std::string username;
+     std::string target;
+     std::string ident;
+     std::vector<std::string> command;
+     std::vector<std::string> after_command;
+     std::vector<std::map<std::string,std::vector<std::string> > > arguments;
   };
 }
 

@@ -13,34 +13,33 @@
 
 namespace dyr
 {
-  namespace asio = boost::asio;
-  namespace ip   = asio::ip;
+    namespace asio = boost::asio;
+    namespace ip   = asio::ip;
 
-  class ConnectionManager
-  {
-    public:
+    class ConnectionManager
+    {
+        public:
+            static ip::tcp::resolver::iterator resolve(
+             const std::string& hostname,
+             const int& port
+            );
 
-      static ip::tcp::resolver::iterator resolve(
-        const std::string& hostname,
-        const int& port
-      );
+            static ip::tcp::resolver::iterator resolve(
+             const std::string& hostname,
+             const std::string& port
+            );
 
-      static ip::tcp::resolver::iterator resolve(
-        const std::string& hostname,
-        const std::string& port
-      );
+            static asio::io_service& get_io_service();
 
-      static asio::io_service& get_io_service();
+            static void process();
 
-      static void process();
+        private:
+            ConnectionManager();
 
-    private:
-      ConnectionManager();
-
-      /*Socket related*/
-      static asio::io_service io_service;
-      static ip::tcp::resolver resolver;
-  };
+            /*Socket related*/
+            static asio::io_service io_service;
+            static ip::tcp::resolver resolver;
+    };
 }
 
 #endif /*CONNECTION_MANAGER_HPP*/
