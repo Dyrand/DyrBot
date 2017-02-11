@@ -45,10 +45,6 @@ namespace dyr
 
      if( bot_id != -1 )
      {
-         std::pair<int,DyrBot> id_bot_pair(
-          
-         );
-
          id_bot_map.emplace(
           std::piecewise_construct,
           std::forward_as_tuple(bot_id),
