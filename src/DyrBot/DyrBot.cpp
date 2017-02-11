@@ -66,10 +66,10 @@ namespace dyr
  //Map strings to privmsg functions
  void DyrBot::initialize_privmsg_commands()
  {
-     command["meta_command"] = meta_command;
-     command["part_all"] = part_all;
-     command["disconnect"] = disconnect;
-     command["request_disconnect"] = request_disconnect;
+     command["meta_command"] = &meta_command;
+     command["part_all"] = &part_all;
+     command["disconnect"] = &disconnect;
+     command["request_disconnect"] = &request_disconnect;
      //command["alias_command"] = alias_command;
  }
 
