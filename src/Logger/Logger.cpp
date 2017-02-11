@@ -14,12 +14,12 @@ void log::toFile(const std::string& text)
 {
     auto t = std::time(nullptr);
     auto tm = *std::localtime(&t);
-    fileout << std::put_time(&tm, "{%d-%m-%Y %H:%M:%S} ") << text << "\n";
+    fileout << std::put_time(&tm, "{%d-%m-%Y %H:%M:%S} ") << text << std::endl;
 }
 
 void log::toConsole(const std::string& text)
 {
-    std::cout << text << "\n";
+    std::cout << text << std::endl;
 }
 
 void log::openFile(const std::string& output_file)

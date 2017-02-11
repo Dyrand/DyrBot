@@ -20,7 +20,7 @@ include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 add_executable(
   DyrBot
   src/main.cpp
-  src/UUID/UniqueIdentifier.cpp
+  src/ID/Identifier.cpp
   src/Logger/Logger.cpp
   src/BotManager/BotManager.cpp
   src/DyrBot/DyrBot.cpp

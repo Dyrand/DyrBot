@@ -16,16 +16,16 @@ namespace dyr
     {
         public:
             BotManager(){}
-            //BotManager(const std::string& default_config);
+            BotManager(const std::string& default_config);
             ~BotManager();
 
             int getBotCount();
 
-            int createBot();
+            int createBot(std::string config_file = "");
             bool deleteBot(int id);
             bool exist(int id);
 
-            void connectBots();
+            void connectBots(int delay);
             void process_loop();
 
             void notify_ready(const int& id);
@@ -34,6 +34,8 @@ namespace dyr
             void process_error();
 
         private:
+            std::string default_config_file;
+            
             boost::mutex mtx;
 
             std::map<int, DyrBot> id_bot_map;

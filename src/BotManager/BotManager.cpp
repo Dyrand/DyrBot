@@ -1,13 +1,14 @@
 #include <iostream>
 #include <utility>
 #include <vector>
+#include <string>
 #include <tuple>
 #include <map>
 
 #include <boost/thread.hpp>
 #include <boost/chrono.hpp>
 
-#include "UniqueIdentifier.hpp"
+#include "Identifier.hpp"
 #include "Logger.hpp"
 #include "BotManager.hpp"
 #include "ConnectionManager.hpp"
@@ -16,6 +17,11 @@
 
 namespace dyr
 {
+ BotManager::BotManager(const std::string& default_config)
+ {
+     default_config_file = default_config;
+ }
+ 
  BotManager::~BotManager()
  {
      //Disconnect all bots connected
@@ -28,34 +34,33 @@ namespace dyr
      return id_bot_map.size();
  }
 
- /*Returns the uuid of the bot created
+ /*Returns the id of the bot created
   -1 otherwise */
- int BotManager::createBot()
+ int BotManager::createBot(std::string config_file)
  {
-     int id = uuid::generate();
+     if(config_file == "")
+     { config_file = default_config_file; }
+     
+     int bot_id = id::generate();
 
-     if( id != -1 )
+     if( bot_id != -1 )
      {
          std::pair<int,DyrBot> id_bot_pair(
           std::piecewise_construct,
-          std::forward_as_tuple(id),
-          std::forward_as_tuple(*this, "config/config.txt", id)
+          std::forward_as_tuple(bot_id),
+          std::forward_as_tuple(bot_id, *this, config_file)
          );
 
-         auto emplace_status = id_bot_map.insert(std::move(id_bot_pair));
+         id_bot_map.insert(std::move(id_bot_pair));
 
-         #ifdef DEBUG
-          log::toFile("DyrBot created with UUID{%}", id);
-         #endif
+         log::toFile("Created DyrBot with ID{%}", bot_id);
      }
      else
      {
-         #ifdef DEBUG
-          log::toFile("Failed to create DyrBot with UUID{%}", id);
-         #endif
+         log::toFile("Failed to create DyrBot with ID{%}", bot_id);
      }
 
-     return id;
+     return bot_id;
  }
 
  /*Returns true if the bot was deleted
@@ -69,25 +74,21 @@ namespace dyr
          id_bot_map.at(id).request_disconnect();
          success = true;
 
-         #ifdef DEBUG
-          log::toFile("DyrBot with UUID{%} deleted", id);
-         #endif
+         log::toFile("DyrBot with ID{%} deleted", id);
      }
      else
      {
-         #ifdef DEBUG
-          log::toFile("Failed to delete DyrBot with UUID{%}", id);
-         #endif
+         log::toFile("Failed to delete DyrBot with ID{%}", id);
      }
 
      return success;
  }
 
- bool BotManager::exist(int id)
+ bool BotManager::exist(int bot_id)
  {
      bool bot_existance = false;
 
-     auto id_bot_map_iter = id_bot_map.find(id);
+     auto id_bot_map_iter = id_bot_map.find(bot_id);
 
      if( id_bot_map_iter != id_bot_map.end() )
      { bot_existance = true; }
@@ -95,12 +96,12 @@ namespace dyr
      return bot_existance;
  }
 
- void BotManager::connectBots()
+ void BotManager::connectBots(int delay)
  {
      for(auto& iter: id_bot_map)
      {
-         int uuid = iter.first;
-         id_bot_thread.emplace(uuid, boost::thread());
+         int bot_id = iter.first;
+         id_bot_thread.emplace(bot_id, boost::thread());
          iter.second.request_connect_to_server();
      }
 
@@ -108,7 +109,7 @@ namespace dyr
      {
          iter.second = boost::thread(&DyrBot::message_pump, &id_bot_map.at(iter.first));
          iter.second.detach();
-         boost::this_thread::sleep_for(boost::chrono::seconds(5));
+         boost::this_thread::sleep_for(boost::chrono::milliseconds(delay));
      }
  }
 

@@ -34,11 +34,11 @@ namespace dyr
 
  //Construct bot using config filename
  DyrBot::DyrBot(
+  int id,
   BotManager& bot_manager_shared,
-  std::string config_filename,
-  int id
+  std::string config_filename
  ):
- uuid(id),
+ bot_id(id),
  bot_manager(bot_manager_shared),
  tcp_socket(ConnectionManager::get_io_service())
  {
@@ -69,10 +69,8 @@ namespace dyr
 
      if(config_in.fail())
      {
-         #ifdef DEBUG
-          log::toFile("In DyrBot::load_config for bot {%}", uuid);
-          log::toFile("Failed to load config file: %", setting["config_filename"]);
-         #endif
+         log::toFile("In DyrBot::load_config for bot {%}", bot_id);
+         log::toFile("Failed to load config file: %", setting["config_filename"]);
 
          notify_manager(DyrError::load_config);
          return false;
@@ -93,11 +91,9 @@ namespace dyr
 
      if(!config_in.eof())
      {
-         #ifdef DEBUG
-          log::toFile("In DyrBot::load_config for bot {%}", uuid);
-          log::toFile("Failed to load config file: %", setting["config_filename"]);
-         #endif
-
+         log::toFile("In DyrBot::load_config for bot {%}", bot_id);
+         log::toFile("Failed to load config file: %", setting["config_filename"]);
+         
          notify_manager(DyrError::load_config);
          return false;
      }
@@ -129,10 +125,8 @@ namespace dyr
 
      if(ec)
      {
-         #ifdef DEBUG
-          log::toFile("In DyrBot::request_connect_to_server");
-          log::toFile(ec.message());
-         #endif
+         log::toFile("In DyrBot::request_connect_to_server");
+         log::toFile(ec.message());
 
          error_queue.push(std::move(ec));
          notify_manager(DyrError::request_connect_to_server);
@@ -162,10 +156,8 @@ namespace dyr
  {
      if(error)
      {
-         #ifdef DEBUG
-          log::toFile("DyrBot::connect_handler");
-          log::toFile(error.message());
-         #endif
+         log::toFile("DyrBot::connect_handler");
+         log::toFile(error.message());
 
          error_queue.push(std::move(error));
          notify_manager(DyrError::connect_handler);
@@ -191,9 +183,7 @@ namespace dyr
      if(!status["ready_to_send"])
      {return;}
 
-     #ifdef CONSOLE_OUT
-      std::cout << "(SENDING):" << message << std::endl;
-     #endif
+     std::cout << "(SENDING):" << message << std::endl;
 
      auto binded_send_handler =
       boost::bind(
@@ -220,9 +210,7 @@ namespace dyr
      if(!status["ready_to_send"])
      {return;}
 
-     #ifdef CONSOLE_OUT
-      std::cout << "(SENDING):" << message << std::endl;
-     #endif
+     std::cout << "(SENDING):" << message << std::endl;
 
      auto binded_send_handler =
       boost::bind(
@@ -251,10 +239,8 @@ namespace dyr
      --pending_sends;
      if(ec)
      {
-         #ifdef DEBUG
-          log::toFile("In DyrBot::send_handler");
-          log::toFile(ec.message());
-         #endif
+         log::toFile("In DyrBot::send_handler");
+         log::toFile(ec.message());
 
          error_queue.push(std::move(ec));
          notify_manager(DyrError::send_handler);
@@ -291,10 +277,8 @@ namespace dyr
      --pending_receives;
      if(ec)
      {
-         #ifdef DEBUG
-          log::toFile("In DyrBot::receive_handler");
-          log::toFile(ec.message());
-         #endif
+         log::toFile("In DyrBot::receive_handler");
+         log::toFile(ec.message());
 
          error_queue.push(std::move(ec));
          notify_manager(DyrError::receive_handler);
@@ -318,9 +302,7 @@ namespace dyr
 
          for(std::string text : unparsed_messages)
          {
-             #ifdef CONSOLE_OUT
-              std::cout << text << std::endl;
-             #endif
+             std::cout << text << std::endl;
              messages.push(parse::irc_message(text));
          }
      }
@@ -347,7 +329,7 @@ namespace dyr
         { disconnect(); }
      }
 
-     log::toFile("Bot {%} message_pump ended", uuid);
+     log::toFile("Bot {%} message_pump ended", bot_id);
  }
 
  void DyrBot::message_handler()
@@ -439,12 +421,12 @@ namespace dyr
 
  bool DyrBot::notify_manager_ready()
  {
-     bot_manager.notify_ready(uuid);
+     bot_manager.notify_ready(bot_id);
      return true;
  }
 
  void DyrBot::notify_manager(DyrError&& error)
  {
-     bot_manager.append_error(uuid, std::move(error));
+     bot_manager.append_error(bot_id, std::move(error));
  }
 }

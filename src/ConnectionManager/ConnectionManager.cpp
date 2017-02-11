@@ -36,9 +36,7 @@ namespace dyr
 
      if(ec)
      {
-         #ifdef DEBUG
-          log::toFile(ec.message());
-         #endif
+         log::toFile(ec.message());
      }
 
      return endpoint_iterator;
@@ -69,9 +67,7 @@ namespace dyr
 
      if(ec)
      {
-         #ifdef DEBUG
-          log::toFile(ec.message());
-         #endif
+         log::toFile(ec.message());
      }
  }
 }
