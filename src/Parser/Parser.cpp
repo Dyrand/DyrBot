@@ -87,17 +87,29 @@ namespace parse
      privmsg_struct.target = message.parameters.substr(0,delim);
 
      delim = message.parameters.find(':');
-     auto unique_pos = message.parameters.find(unique_delim);
+     auto unique_pos = message.parameters.find(unique_delim,delim+1);
      //Check if command identifier is just after ':'
      if(unique_pos == delim+1)
      {
+         privmsg_struct.ident = unique_delim;
+         
          while(unique_pos != std::string::npos)
          {
-             privmsg_struct.ident = unique_delim;
              //Parse command
              auto begin_pos = message.parameters.find_first_not_of(' ',unique_pos+unique_delim.length());
              delim = message.parameters.find(' ',begin_pos+1);
-             privmsg_struct.command.emplace_back(message.parameters.substr(begin_pos,delim-begin_pos));
+             
+             //Command exists
+             if(begin_pos != std::string::npos)
+             { privmsg_struct.command.emplace_back(message.parameters.substr(begin_pos,delim-begin_pos)); }
+             //Empty command
+             else
+             { 
+                privmsg_struct.command.emplace_back("");
+                privmsg_struct.after_command.emplace_back("");
+                privmsg_struct.arguments.emplace_back(std::map<std::string,std::vector<std::string> >());
+                break;
+             }
 
              delim = message.parameters.find_first_not_of(' ',delim);
 

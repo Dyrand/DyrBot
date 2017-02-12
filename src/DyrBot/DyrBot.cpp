@@ -66,11 +66,11 @@ namespace dyr
  //Map strings to privmsg functions
  void DyrBot::initialize_privmsg_commands()
  {
-     command["meta_command"] = &meta_command;
-     command["part_all"] = &part_all;
-     command["disconnect"] = &disconnect;
-     command["request_disconnect"] = &request_disconnect;
-     //command["alias_command"] = alias_command;
+     command["meta_command"] = &DyrBot::meta_command;
+     command["part_all"] = &DyrBot::part_all;
+     command["disconnect"] = &DyrBot::disconnect;
+     command["request_disconnect"] = &DyrBot::request_disconnect;
+     //command["change_setting"] = &change_settings;
  }
 
  //Load config file
@@ -124,6 +124,7 @@ namespace dyr
      setting["realname"]            = "DyrBot";
      setting["mode"]                = "0";
      setting["command_ident"]       = ">";
+     setting["substitutor"]         = "`";
  }
 
  //Request to connect to server
@@ -317,6 +318,7 @@ namespace dyr
          for(std::string text : unparsed_messages)
          {
              std::cout << text << std::endl;
+             substitute_variables(text);
              messages.push(parse::irc_message(text));
          }
      }
@@ -494,4 +496,41 @@ namespace dyr
  {
      bot_manager.append_error(bot_id, std::move(error));
  }
+  
+ void DyrBot::substitute_variables(std::string& str)
+ {
+     std::size_t current_index = 0;
+      
+     while(current_index != std::string::npos)
+     {
+         std::size_t replace_start_index = str.find(setting["substitutor"], current_index);
+         current_index = replace_start_index;
+         
+         std::size_t replace_end_index = str.find(setting["substitutor"], current_index+setting["substitutor"].length());
+          
+         if(replace_start_index != std::string::npos && replace_end_index != std::string::npos)
+         {
+             std::size_t var_start_index = replace_start_index+setting["substitutor"].length();
+             std::size_t var_length = (replace_end_index-replace_start_index)-setting["substitutor"].length();
+             std::size_t replace_length = var_length+2*setting["substitutor"].length();
+          
+             std::string variable = str.substr(
+              var_start_index,
+              var_length
+             );
+              
+             if(setting.count(variable))
+             {
+                 str.replace(replace_start_index,replace_length,setting[variable]);
+                 current_index += setting[variable].length();
+             }
+             else
+             {
+                 str.replace(replace_start_index,replace_length,"");
+             }
+         }
+         else
+         { break; }
+     }
+ }       
 }

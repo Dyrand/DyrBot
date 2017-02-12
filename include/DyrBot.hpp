@@ -102,6 +102,8 @@ namespace dyr
 
          bool notify_manager_ready();
          void notify_manager(DyrError&& error);
+         
+         void substitute_variables(std::string& str);
 
          int bot_id;
 
