@@ -13,6 +13,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/thread.hpp>
 #include <boost/chrono.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "ConnectionManager.hpp"
 #include "BotManager.hpp"
@@ -34,7 +35,7 @@ namespace dyr
 
  //Construct bot using config filename
  DyrBot::DyrBot(
-  int id,
+  const int id,
   BotManager& bot_manager_shared,
   std::string config_filename
  ):
@@ -59,6 +60,7 @@ namespace dyr
      status["ready_to_send"] = false;
      status["ready_to_receive"] = false;
      status["request_to_disconnect"] = false;
+	 status["self_destructed"] = false;
      pending_receives = 0;
      pending_sends = 0;
  }
@@ -83,7 +85,6 @@ namespace dyr
          log::toFile("In DyrBot::load_config for bot {%}", bot_id);
          log::toFile("Failed to load config file: %", setting["config_filename"]);
 
-         notify_manager(DyrError::load_config);
          return false;
      }
 
@@ -105,7 +106,6 @@ namespace dyr
          log::toFile("In DyrBot::load_config for bot {%}", bot_id);
          log::toFile("Failed to load config file: %", setting["config_filename"]);
          
-         notify_manager(DyrError::load_config);
          return false;
      }
 
@@ -125,25 +125,22 @@ namespace dyr
      setting["mode"]                = "0";
      setting["command_ident"]       = ">";
      setting["substitutor"]         = "`";
+     setting["retry_connect_wait"]  = "10000";
+ }
+ 
+ void DyrBot::self_destruct()
+ {
+	 status["self_destructed"] = true;
+	 disconnect();
  }
 
  //Request to connect to server
- bool DyrBot::request_connect_to_server()
+ void DyrBot::request_connect_to_server()
  {
-     system::error_code ec;
-
+	 if(status["self_destructed"])
+	 { return; }
      const ip::tcp::resolver::iterator endpoint_iterator =
       ConnectionManager::resolve(setting["hostname"], setting["port"]);
-
-     if(ec)
-     {
-         log::toFile("In DyrBot::request_connect_to_server");
-         log::toFile(ec.message());
-
-         error_queue.push(std::move(ec));
-         notify_manager(DyrError::request_connect_to_server);
-         return false;
-     }
 
      //Binded connect_handler
      auto connection_handler =
@@ -156,27 +153,42 @@ namespace dyr
 
       asio::async_connect(tcp_socket, endpoint_iterator, connection_handler);
       begin_time = high_res_clock::now();
-
-      return true;
  }
 
  //Callback for request_connect_to_server
  void DyrBot::connect_handler(
-  const system::error_code& error,
+  const system::error_code& ec,
   asio::ip::tcp::resolver::iterator iter
  )
  {
-     if(error)
+     if(ec)
      {
-         log::toFile("DyrBot::connect_handler");
-         log::toFile(error.message());
+         log::toFile("In DyrBot::connect_handler for Bot{%}", bot_id);
+         log_error(ec);
+         
+         int delay;
+         
+         try
+         {
+            delay = std::stoi(setting["retry_connect_wait"]);
+         }
+         catch(const std::exception &e)
+         {
+             setting["reconnect_wait"] = "10000";
+             delay = 10000;
+         }
+		 
+		 status["connected_to_server"] = false;
+         status["ready_to_send"] = false;
+         status["ready_to_receive"] = false;
 
-         error_queue.push(std::move(error));
-         notify_manager(DyrError::connect_handler);
+         boost::this_thread::sleep_for(boost::chrono::milliseconds(delay));
+         
+         notify_manager(DyrError::disconnected); 
      }
      else
      {
-         log::toFile("Bot {%} connected succesful", bot_id);
+         log::toFile("Bot {%} connected succesfully", bot_id);
          
          status["connected_to_server"] = true;
          status["ready_to_send"] = true;
@@ -185,9 +197,9 @@ namespace dyr
          end_time = high_res_clock::now();
          time_to_connect = end_time - begin_time;
          rng.seed(time_to_connect.count());
-
+		
+		 register_connection();
          notify_manager_ready();
-         register_connection();
      }
  }
 
@@ -195,7 +207,7 @@ namespace dyr
  void DyrBot::request_send(const std::string& message)
  {
      if(!status["ready_to_send"])
-     {return;}
+     { return; }
 
      std::cout << "(SENDING):" << message << std::endl;
 
@@ -215,6 +227,7 @@ namespace dyr
      sendbuf->push_back('\n');
 
      tcp_socket.async_send(asio::buffer(*sendbuf), binded_send_handler);
+     
      ++pending_sends;
  }
 
@@ -222,7 +235,7 @@ namespace dyr
  void DyrBot::request_send(std::string&& message)
  {
      if(!status["ready_to_send"])
-     {return;}
+     { return; }
 
      std::cout << "(SENDING):" << message << std::endl;
 
@@ -241,6 +254,7 @@ namespace dyr
       std::make_shared<std::vector<char> >(message.begin(), message.end());
 
       tcp_socket.async_send(asio::buffer(*sendbuf), binded_send_handler);
+      
       ++pending_sends;
  }
 
@@ -251,13 +265,11 @@ namespace dyr
  )
  {
      --pending_sends;
+	 
      if(ec)
      {
-         log::toFile("In DyrBot::send_handler");
-         log::toFile(ec.message());
-
-         error_queue.push(std::move(ec));
-         notify_manager(DyrError::send_handler);
+         log::toFile("In DyrBot::send_handler for Bot {%}", bot_id);
+         log_error(ec);
      }
  }
 
@@ -265,7 +277,7 @@ namespace dyr
  void DyrBot::request_receive()
  {
      if(!status["ready_to_receive"])
-     {return;}
+     { return; }
 
      auto binded_receive_handler =
       boost::bind(
@@ -276,7 +288,9 @@ namespace dyr
       );
 
       recbuf.emplace();
+      
       tcp_socket.async_receive(asio::buffer(recbuf.back()), binded_receive_handler);
+      
       ++pending_receives;
  }
 
@@ -287,16 +301,12 @@ namespace dyr
   std::size_t bytes_received
  )
  {
-     static std::string partial_string;
-
      --pending_receives;
+	 
      if(ec)
      {
          log::toFile("In DyrBot::receive_handler for Bot {%}", bot_id);
-         log::toFile(ec.message());
-
-         error_queue.push(std::move(ec));
-         notify_manager(DyrError::receive_handler);
+         log_error(ec);
      }
      else
      {
@@ -312,8 +322,7 @@ namespace dyr
              return;
          }
 
-         partial_string =
-          parse::raw_message(partial_string + recv_string, unparsed_messages);
+         partial_string = parse::raw_message(partial_string + recv_string, unparsed_messages);
 
          for(std::string text : unparsed_messages)
          {
@@ -324,27 +333,29 @@ namespace dyr
      }
 
      recbuf.pop();
+     
+     request_receive();
  }
 
  //Loop for continually making send and receive request
  void DyrBot::message_pump()
  {     
+     //Start the chain of request_receive calls
+	 request_receive();
+	 
      while(status["connected_to_server"])
      {
-         if(pending_receives <= 5 && !status["request_to_disconnect"])
-        { request_receive(); }
+         message_handler();
 
-        message_handler();
-        error_handler();
-
-        boost::this_thread::sleep_for(boost::chrono::milliseconds(16));
-
-        if(status["request_to_disconnect"] &&
-          (pending_sends == 0))
-        { disconnect(); }
+         if(status["request_to_disconnect"] && (pending_sends == 0))
+         { disconnect(); }
+	 
+		 boost::this_thread::sleep_for(boost::chrono::milliseconds(20));
      }
 
      log::toFile("Bot {%} message_pump ended", bot_id);
+     
+     notify_manager(DyrError::disconnected);
  }
 
  void DyrBot::message_handler()
@@ -374,11 +385,212 @@ namespace dyr
     }
  }
 
- void DyrBot::error_handler()
+ void DyrBot::log_error(const boost::system::error_code& ec)
  {
-    //Needs real implementation
-    while(!error_queue.empty())
-    { error_queue.pop(); }
+     std::string error_value;
+     switch(ec.value())
+     {
+        case asio::error::access_denied:
+            error_value = " {access_denied}";
+        break;
+        case asio::error::address_family_not_supported:
+            error_value = " {address_family_not_supported}";
+        break;
+        case asio::error::address_in_use:
+            error_value = " {address_in_use}";
+        break;
+        case asio::error::already_connected:
+            error_value = " {already_connected}";
+        break;
+        case asio::error::already_started:
+            error_value = " {already_started}";
+        break;
+        case asio::error::broken_pipe:
+        {
+            error_value = " {broken_pipe}";
+            status["connected_to_server"] =  false;
+            status["ready_to_send"] = false;
+            status["ready_to_receive"] = false;
+        }
+        break;
+        case asio::error::connection_aborted:
+        {
+            error_value = " {connection_aborted}";
+            status["connected_to_server"] =  false;
+            status["ready_to_send"] = false;
+            status["ready_to_receive"] = false;
+        }
+        break;
+        case asio::error::connection_refused:
+        {
+            error_value = " {connection_refused}";
+            status["connected_to_server"] =  false;
+            status["ready_to_send"] = false;
+            status["ready_to_receive"] = false;
+        }
+        break;
+        case asio::error::connection_reset:
+        {
+            error_value = " {connection_reset}";
+            status["connected_to_server"] =  false;
+            status["ready_to_send"] = false;
+            status["ready_to_receive"] = false;
+        }
+        break;
+        case asio::error::bad_descriptor:
+            error_value = " {bad_descriptor}";
+        break;
+        case asio::error::fault:
+        {
+            error_value = " {fault}";
+            status["connected_to_server"] =  false;
+            status["ready_to_send"] = false;
+            status["ready_to_receive"] = false;
+        }
+        break;
+        case asio::error::host_unreachable:
+            error_value = " {host_unreachable}";
+        break;
+        case asio::error::in_progress:
+            error_value = " {in_progress}";
+        break;
+        case asio::error::interrupted:
+            error_value = " {interrupted}";
+        break;
+        case asio::error::invalid_argument:
+            error_value = " {invalid_argument}";
+        break;
+        case asio::error::message_size:
+            error_value = " {message_size}";
+        break;
+        case asio::error::name_too_long:
+            error_value = " {name_too_long}";
+        break;
+        case asio::error::network_down:
+        {
+            error_value = " {network_down}";
+            status["connected_to_server"] =  false;
+            status["ready_to_send"] = false;
+            status["ready_to_receive"] = false;
+        }
+        break;
+        case asio::error::network_reset:
+        {
+            error_value = " {network_reset}";
+            status["connected_to_server"] =  false;
+            status["ready_to_send"] = false;
+            status["ready_to_receive"] = false;
+        }
+        break;
+        case asio::error::network_unreachable:
+        {
+            error_value = " {network_unreachable}";
+            status["connected_to_server"] =  false;
+            status["ready_to_send"] = false;
+            status["ready_to_receive"] = false;
+        }
+        break;
+        case asio::error::no_descriptors:
+            error_value = " {no_descriptors}";
+        break;
+        case asio::error::no_buffer_space:
+            error_value = " {no_buffer_space}";
+        break;
+        case asio::error::no_memory:
+            error_value = " {no_memory}";
+        break;
+        case asio::error::no_permission:
+            error_value = " {no_permission}";
+        break;
+        case asio::error::no_protocol_option:
+            error_value = " {no_protocol_option}";
+        break;
+        case asio::error::no_such_device:
+            error_value = " {no_such_device}";
+        break;
+        case asio::error::not_connected:
+        {
+            error_value = " {not_connected}";
+            status["connected_to_server"] =  false;
+            status["ready_to_send"] = false;
+            status["ready_to_receive"] = false;
+        }
+        break;
+        case asio::error::not_socket:
+            error_value = " {not_socket}";
+        break;
+        case asio::error::operation_aborted:
+        {
+            error_value = " {operation_aborted}";
+            status["connected_to_server"] =  false;
+            status["ready_to_send"] = false;
+            status["ready_to_receive"] = false;
+        }
+        break;
+        case asio::error::timed_out:
+            error_value = " {timed_out}";
+        break;
+        case asio::error::try_again:
+            error_value = " {try_again}";
+        break;
+        case asio::error::would_block:
+            error_value = " {would_block}";
+        break;
+        case asio::error::host_not_found:
+            error_value = " {host_not_found}";
+        break;
+        case asio::error::host_not_found_try_again:
+            error_value = " {host_not_found_try_again}";
+        break;
+        case asio::error::no_data:
+            error_value = " {no_data}";
+        break;
+        case asio::error::no_recovery:
+            error_value = " {no_recovery}";
+        break;
+        case asio::error::service_not_found:
+            error_value = " {service_not_found}";
+        break;
+        case asio::error::socket_type_not_supported:
+            error_value = " {socket_type_not_supported}";
+        break;
+        case asio::error::already_open:
+            error_value = " {already_open}";
+        break;
+        case asio::error::eof:
+        {
+            error_value = " {eof}";
+            status["connected_to_server"] =  false;
+            status["ready_to_send"] = false;
+            status["ready_to_receive"] = false;
+        }
+        break;
+        case asio::error::shut_down:
+        {
+            error_value = " {shut_down}";
+            status["connected_to_server"] =  false;
+            status["ready_to_send"] = false;
+            status["ready_to_receive"] = false;
+        }
+        break;
+        break;
+        case asio::error::not_found:
+            error_value = " {not_found}";
+        break;
+        case asio::error::fd_set_failure:
+            error_value = " {fd_set_failure}";
+        break;
+        //Assume socket is in a bad state
+        default:
+        {
+            error_value = " {UNKNOWN}";
+            status["connected_to_server"] =  false;
+            status["ready_to_send"] = false;
+            status["ready_to_receive"] = false;
+        }
+     }
+
+     log::toFile(ec.message()+error_value);
  }
 
  void DyrBot::register_connection()
@@ -390,19 +602,31 @@ namespace dyr
 
  void DyrBot::join(const std::string& channel)
  {
-     channels.emplace_back(channel);
+	 //Split channel string up into individual channels in the case of comma seperated channels
      request_send("JOIN " + channel);
+	 boost::split(channels, channel, boost::is_any_of(","), boost::token_compress_on);
  }
 
  void DyrBot::part(const std::string& channel)
  {
-     request_send("PART " + channel);
+	 request_send("PART " + channel);
+	 std::set<std::string> part_channels;
+	 boost::split(part_channels, channel, boost::is_any_of(","), boost::token_compress_on);
+	 
+	 for(std::string a_channel : part_channels)
+	 {
+		channels.erase(a_channel);
+	 }
  }
 
  void DyrBot::part_all(const irc_message_struct* message, irc_privmsg_struct* privmsg)
  {
      for(auto& channel: channels)
-     { part(channel); }
+     { 
+		request_send("PART " + channel);
+     }
+	 
+	 channels.clear();
  }
  
  void DyrBot::privmsg(std::string target, std::string message)
@@ -412,14 +636,14 @@ namespace dyr
 
  void DyrBot::change_nick()
  {
-     static std::string nick("NICK ");
      
      std::string nickname;
 
      for(int i(0); i < 8; ++i)
      { nickname += ((rng()%26)+65)+(32*(rng()%2)); }
-
-     request_send(nick + nickname);
+	
+	 setting["nickname"] = nickname;
+     request_send("NICK " + nickname);
  }
  
  void DyrBot::privmsg_handler(const irc_message_struct& message)
@@ -481,20 +705,37 @@ namespace dyr
  void DyrBot::disconnect(const irc_message_struct* message, irc_privmsg_struct* privmsg)
  {
      boost::system::error_code ec;
+	 
      tcp_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
-     tcp_socket.close();
+	 
+	 if(ec)
+	 {
+		 log::toFile("In DyrBot::disconnect for Bot {%}", bot_id);
+		 log::toFile(ec.message());
+	 }
+	 
+     tcp_socket.close(ec);
+	 
+	 if(ec)
+	 {
+		 log::toFile("In DyrBot::disconnect for Bot {%}", bot_id);
+		 log::toFile(ec.message());
+	 }
+	 
      status["connected_to_server"] = false;
+     status["request_to_disconnect"] = false;
+     status["ready_to_send"] = false;
+     status["ready_to_receive"] = false;
  }
 
- bool DyrBot::notify_manager_ready()
+ void DyrBot::notify_manager_ready()
  {
      bot_manager.notify_ready(bot_id);
-     return true;
  }
 
  void DyrBot::notify_manager(DyrError&& error)
  {
-     bot_manager.append_error(bot_id, std::move(error));
+     bot_manager.notify_error(bot_id, std::move(error));
  }
   
  void DyrBot::substitute_variables(std::string& str)

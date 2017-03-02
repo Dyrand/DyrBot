@@ -50,11 +50,11 @@ namespace dyr
           std::forward_as_tuple(bot_id),
           std::forward_as_tuple(bot_id, *this, config_file));
 
-         log::toFile("Created DyrBot with ID{%}", bot_id);
+         log::toFile("Created DyrBot with ID {%}", bot_id);
      }
      else
      {
-         log::toFile("Failed to create DyrBot with ID{%}", bot_id);
+         log::toFile("Failed to create DyrBot with ID {%}", bot_id);
      }
 
      return bot_id;
@@ -68,14 +68,14 @@ namespace dyr
 
      if( exist(id) )
      {
-         id_bot_map.at(id).request_disconnect();
+         id_bot_map.at(id).self_destruct();
          success = true;
 
-         log::toFile("DyrBot with ID{%} deleted", id);
+         log::toFile("DyrBot with ID {%} deleted", id);
      }
      else
      {
-         log::toFile("Failed to delete DyrBot with ID{%}", id);
+         log::toFile("DyrBot with ID{%} does not exist, so it could not be deleted", id);
      }
 
      return success;
@@ -103,28 +103,19 @@ namespace dyr
      }
  }
 
+ //Called by bot to indicate to BotManager that it's ready for the message_pump thread
  void BotManager::notify_ready(const int& id)
  {
      id_bot_thread.at(id) = boost::thread(&DyrBot::message_pump, &id_bot_map.at(id));
      id_bot_thread.at(id).detach();
  }
-
- void BotManager::process_loop()
+ 
+ //Called by bot to indicate there was an error
+ void BotManager::notify_error(const int& id, DyrError&& error)
  {
-     //std::this_thread::sleep_for(std::chrono::milliseconds(10));
- }
-
- void BotManager::append_error(const int& id, DyrError&& error)
- {
-     bot_errors.emplace(id, error);
-     process_error();
- }
-
- void BotManager::process_error()
- {
-     //Needs real implementation
-     mtx.lock();
-     bot_errors.pop();
-     mtx.unlock();
+     if(error == DyrError::disconnected)
+     {
+        id_bot_map.at(id).request_connect_to_server();
+     }
  }
 }

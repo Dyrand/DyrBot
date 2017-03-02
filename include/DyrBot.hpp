@@ -4,11 +4,14 @@
 #include <functional>
 #include <string>
 #include <random>
+#include <mutex>
 #include <queue>
 #include <map>
+#include <set>
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
+#include <boost/thread.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/chrono.hpp>
 
@@ -33,18 +36,21 @@ namespace dyr
          
          //Construct bot using config filename
          DyrBot(
-             int id,
+             const int id,
              BotManager& bot_manager_shared,
              std::string config_filename  = ""
          );
 
          //Request to connect to server
-         bool request_connect_to_server();
+         void request_connect_to_server();
 
          void request_disconnect(const irc_message_struct* irc_message = nullptr, irc_privmsg_struct* irc_privmsg = nullptr);
 
          //Loop for continually making send and receive request
          void message_pump();
+		 
+		 //Closes the connection immediately
+		 void self_destruct();
 
      private:
          //Initialize status variables
@@ -61,7 +67,7 @@ namespace dyr
 
          //Callback for request_connect_to_server
          void connect_handler(
-          const system::error_code& error,
+          const system::error_code& ec,
           asio::ip::tcp::resolver::iterator iter
          );
 
@@ -85,7 +91,7 @@ namespace dyr
          );
 
          void message_handler();
-         void error_handler();
+         void log_error(const boost::system::error_code& ec);
 
          void register_connection();
          void join(const std::string& channel);
@@ -99,8 +105,8 @@ namespace dyr
          void meta_command(const irc_message_struct* irc_message, irc_privmsg_struct* irc_privmsg);
 
          void disconnect(const irc_message_struct* irc_message = nullptr, irc_privmsg_struct* irc_privmsg = nullptr);
-
-         bool notify_manager_ready();
+            
+         void notify_manager_ready();
          void notify_manager(DyrError&& error);
          
          void substitute_variables(std::string& str);
@@ -109,6 +115,7 @@ namespace dyr
 
          int pending_receives;
          int pending_sends;
+		 std::string partial_string;
 
          BotManager& bot_manager;
 
@@ -116,14 +123,13 @@ namespace dyr
          std::vector<std::string> unparsed_messages;
          std::queue<irc_message_struct> messages;
 
-         std::vector<std::string> channels;
+         std::set<std::string> channels;
 
          ip::tcp::socket tcp_socket;
 
          std::map<std::string, privmsg_function> command;
          std::map<std::string, std::string> setting;
          std::map<std::string, bool> status;
-         std::queue<system::error_code> error_queue;
 
          std::default_random_engine rng;
          high_res_clock::time_point begin_time;

@@ -21,6 +21,8 @@ namespace dyr
 
             int getBotCount();
 
+			/*Returns the id of the bot created
+			   -1 otherwise */
             int createBot(std::string config_file = "");
             bool deleteBot(int id);
             bool exist(int id);
@@ -29,9 +31,7 @@ namespace dyr
             void process_loop();
 
             void notify_ready(const int& id);
-
-            void append_error(const int& id, DyrError&& error);
-            void process_error();
+            void notify_error(const int& id, DyrError&& error); 
 
         private:
             std::string default_config_file;
@@ -40,8 +40,6 @@ namespace dyr
 
             std::map<int, DyrBot> id_bot_map;
             std::map<int, boost::thread> id_bot_thread;
-
-            std::queue<std::pair<int, DyrError> > bot_errors;
 
             int generateID();
 

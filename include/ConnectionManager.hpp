@@ -1,15 +1,10 @@
 #ifndef CONNECTION_MANAGER_HPP
 #define CONNECTION_MANAGER_HPP
 
-#include <thread>
-#include <vector>
-#include <utility>
-#include <memory>
+#include <string>
 
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
-
-#include "DyrBot.hpp"
 
 namespace dyr
 {
@@ -19,11 +14,6 @@ namespace dyr
     class ConnectionManager
     {
         public:
-            static ip::tcp::resolver::iterator resolve(
-             const std::string& hostname,
-             const int& port
-            );
-
             static ip::tcp::resolver::iterator resolve(
              const std::string& hostname,
              const std::string& port

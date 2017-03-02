@@ -13,7 +13,7 @@ namespace dyr
  std::deque<int> id::available;
 
  /* id::generate returns a positive integer value
-    if a id is available and -1 otherwise */
+    if an id is available and -1 otherwise */
  int id::generate()
  {
      if(!available.empty())
@@ -40,7 +40,7 @@ namespace dyr
      return current_id;
  }
 
- /* uuid::release makes a id available again */
+ /* id::release makes an id available again */
  void id::release(int releasable_id)
  {
      available.push_back(releasable_id);
