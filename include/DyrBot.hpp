@@ -49,9 +49,9 @@ namespace dyr
 
          //Loop for continually making send and receive request
          void message_pump();
-		 
-		 //Closes the connection immediately
-		 void self_destruct();
+
+         //Closes the connection immediately
+         void self_destruct();
 
      private:
          //Initialize status variables
@@ -118,7 +118,7 @@ namespace dyr
 
          int pending_receives;
          int pending_sends;
-		 std::string partial_string;
+         std::string partial_string;
 
          BotManager& bot_manager;
 
