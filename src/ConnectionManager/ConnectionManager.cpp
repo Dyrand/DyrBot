@@ -30,7 +30,7 @@ namespace dyr
 
      if(ec)
      {
-		 log::toFile("In ConnectionManager::resolve");
+         log::toFile("In ConnectionManager::resolve");
          log::toFile(ec.message());
      }
 
@@ -54,7 +54,7 @@ namespace dyr
 
      if(ec)
      {
-		 log::toFile("In ConnectionManager::process");
+         log::toFile("In ConnectionManager::process");
          log::toFile(ec.message());
      }
  }
