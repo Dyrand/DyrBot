@@ -33,7 +33,8 @@ namespace dyr
  {
      public:
          typedef std::function<void(DyrBot*, const irc_message_struct*, irc_privmsg_struct*)> privmsg_function;
-         
+         typedef void privmsg_func_sig(const irc_message_struct*, irc_privmsg_struct*);
+         typedef void(*privmsg_func_ptr)(DyrBot*, const irc_message_struct*, irc_privmsg_struct*);
          //Construct bot using config filename
          DyrBot(
              const int id,
@@ -100,6 +101,8 @@ namespace dyr
          void privmsg(std::string target, std::string message);
 
          void change_nick();
+         void change_nick(std::string nickname);
+         void change_nick(const irc_message_struct* irc_message, irc_privmsg_struct* irc_privmsg);
          void privmsg_handler(const irc_message_struct& message);
          
          void meta_command(const irc_message_struct* irc_message, irc_privmsg_struct* irc_privmsg);

@@ -72,6 +72,7 @@ namespace dyr
      command["part_all"] = &DyrBot::part_all;
      command["disconnect"] = &DyrBot::disconnect;
      command["request_disconnect"] = &DyrBot::request_disconnect;
+     command["change_nick"] = std::mem_fn<privmsg_func_sig>(&DyrBot::change_nick);
      //command["change_setting"] = &change_settings;
  }
 
@@ -636,7 +637,6 @@ namespace dyr
 
  void DyrBot::change_nick()
  {
-     
      std::string nickname;
 
      for(int i(0); i < 8; ++i)
@@ -644,6 +644,21 @@ namespace dyr
 	
 	 setting["nickname"] = nickname;
      request_send("NICK " + nickname);
+ }
+ 
+ void DyrBot::change_nick(std::string nickname)
+ {
+     setting["nickname"] = nickname;
+     request_send("NICK " + nickname);
+ }
+ 
+ void DyrBot::change_nick(const irc_message_struct* irc_message, irc_privmsg_struct* irc_privmsg)
+ {
+     if(irc_privmsg->arguments.size() > 0)
+     {
+         if(irc_privmsg->arguments.at(0).find("") != irc_privmsg->arguments.at(0).end())
+         change_nick(irc_privmsg->arguments.at(0).at("").at(0));
+     }
  }
  
  void DyrBot::privmsg_handler(const irc_message_struct& message)

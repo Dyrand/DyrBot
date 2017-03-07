@@ -17,7 +17,7 @@ namespace po = boost::program_options;
 
 po::options_description initialize_command_line_options()
 {
-    po::options_description desc("DyrBot Options:");
+    po::options_description desc("DyrBot Options");
     desc.add_options()
         ("help", "display this help screen")
         ("number_of_bots,n", po::value<int>()->default_value(1), "set number of bots to create")
