@@ -140,6 +140,7 @@ namespace dyr
  {
      if(status["self_destructed"])
      { return; }
+ 
      const ip::tcp::resolver::iterator endpoint_iterator =
       ConnectionManager::resolve(setting["hostname"], setting["port"]);
 

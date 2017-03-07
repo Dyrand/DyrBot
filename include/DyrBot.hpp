@@ -35,6 +35,7 @@ namespace dyr
          typedef std::function<void(DyrBot*, const irc_message_struct*, irc_privmsg_struct*)> privmsg_function;
          typedef void privmsg_func_sig(const irc_message_struct*, irc_privmsg_struct*);
          typedef void(*privmsg_func_ptr)(DyrBot*, const irc_message_struct*, irc_privmsg_struct*);
+         
          //Construct bot using config filename
          DyrBot(
              const int id,
@@ -42,7 +43,6 @@ namespace dyr
              std::string config_filename  = ""
          );
 
-         //Request to connect to server
          void request_connect_to_server();
 
          void request_disconnect(const irc_message_struct* irc_message = nullptr, irc_privmsg_struct* irc_privmsg = nullptr);
@@ -54,7 +54,6 @@ namespace dyr
          void self_destruct();
 
      private:
-         //Initialize status variables
          void initialize_status();
          
          //Map strings to privmsg functions
