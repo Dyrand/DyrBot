@@ -58,7 +58,7 @@ namespace dyr
      status["ready_to_send"] = false;
      status["ready_to_receive"] = false;
      status["request_to_disconnect"] = false;
-	 status["self_destructed"] = false;
+     status["self_destructed"] = false;
      pending_receives = 0;
      pending_sends = 0;
  }
