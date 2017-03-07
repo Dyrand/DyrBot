@@ -82,7 +82,7 @@ namespace dyr
      if(config_in.fail())
      {
          log::toFile("In DyrBot::load_config for bot {%}", bot_id);
-         log::toFile("Failed to load config file: %", setting["config_filename"]);
+         log::toFile("Failed to open config file: %", setting["config_filename"]);
 
          return false;
      }
@@ -103,7 +103,7 @@ namespace dyr
      if(!config_in.eof())
      {
          log::toFile("In DyrBot::load_config for bot {%}", bot_id);
-         log::toFile("Failed to load config file: %", setting["config_filename"]);
+         log::toFile("Failed to completely load config file: %", setting["config_filename"]);
          
          return false;
      }
