@@ -38,9 +38,9 @@ namespace dyr
   BotManager& bot_manager_shared,
   std::string config_filename
  ):
- bot_id(id),
- bot_manager(bot_manager_shared),
- tcp_socket(ConnectionManager::get_io_service())
+  bot_id(id),
+  bot_manager(bot_manager_shared),
+  tcp_socket(ConnectionManager::get_io_service())
  {
      setting["config_filename"] = config_filename;
      initialize_status();
