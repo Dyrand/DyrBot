@@ -33,7 +33,6 @@ namespace dyr
 
  typedef boost::chrono::high_resolution_clock high_res_clock;
 
- //Construct bot using config filename
  DyrBot::DyrBot(
   const int id,
   BotManager& bot_manager_shared,
@@ -52,7 +51,6 @@ namespace dyr
  }
 
 
- //Initialize status variables
  void DyrBot::initialize_status()
  {
      status["config_loaded"] = false;
@@ -65,7 +63,7 @@ namespace dyr
      pending_sends = 0;
  }
  
- //Map strings to privmsg functions
+ 
  void DyrBot::initialize_privmsg_commands()
  {
      command["meta_command"] = &DyrBot::meta_command;
@@ -76,7 +74,7 @@ namespace dyr
      //command["change_setting"] = &change_settings;
  }
 
- //Load config file
+ 
  bool DyrBot::load_config()
  {
      std::ifstream config_in(setting["config_filename"]);
@@ -114,6 +112,7 @@ namespace dyr
      return true;
  }
  
+ 
  void DyrBot::load_default_settings()
  {
      setting["hostname"]            = "irc.freenode.com";
@@ -129,17 +128,18 @@ namespace dyr
      setting["retry_connect_wait"]  = "10000";
  }
  
+ 
  void DyrBot::self_destruct()
  {
-	 status["self_destructed"] = true;
-	 disconnect();
+     status["self_destructed"] = true;
+     disconnect();
  }
 
- //Request to connect to server
+ 
  void DyrBot::request_connect_to_server()
  {
-	 if(status["self_destructed"])
-	 { return; }
+     if(status["self_destructed"])
+     { return; }
      const ip::tcp::resolver::iterator endpoint_iterator =
       ConnectionManager::resolve(setting["hostname"], setting["port"]);
 
@@ -156,7 +156,7 @@ namespace dyr
       begin_time = high_res_clock::now();
  }
 
- //Callback for request_connect_to_server
+ 
  void DyrBot::connect_handler(
   const system::error_code& ec,
   asio::ip::tcp::resolver::iterator iter
@@ -178,8 +178,8 @@ namespace dyr
              setting["reconnect_wait"] = "10000";
              delay = 10000;
          }
-		 
-		 status["connected_to_server"] = false;
+         
+         status["connected_to_server"] = false;
          status["ready_to_send"] = false;
          status["ready_to_receive"] = false;
 
@@ -198,13 +198,13 @@ namespace dyr
          end_time = high_res_clock::now();
          time_to_connect = end_time - begin_time;
          rng.seed(time_to_connect.count());
-		
-		 register_connection();
+         
+         register_connection();
          notify_manager_ready();
      }
  }
 
- //Request to send message asynchronously to server
+ 
  void DyrBot::request_send(const std::string& message)
  {
      if(!status["ready_to_send"])
@@ -232,7 +232,7 @@ namespace dyr
      ++pending_sends;
  }
 
- //Request to send message asynchronously to server
+ 
  void DyrBot::request_send(std::string&& message)
  {
      if(!status["ready_to_send"])
@@ -259,14 +259,14 @@ namespace dyr
       ++pending_sends;
  }
 
- //Callback for request_send
+ 
  void DyrBot::send_handler(
   const system::error_code& ec,
   std::size_t bytes_sent
  )
  {
      --pending_sends;
-	 
+     
      if(ec)
      {
          log::toFile("In DyrBot::send_handler for Bot {%}", bot_id);
@@ -274,7 +274,7 @@ namespace dyr
      }
  }
 
- //Request to receive message asynchronously from server
+ 
  void DyrBot::request_receive()
  {
      if(!status["ready_to_receive"])
@@ -296,14 +296,13 @@ namespace dyr
  }
 
  
- //Callback for request_send
  void DyrBot::receive_handler(
   const boost::system::error_code& ec,
   std::size_t bytes_received
  )
  {
      --pending_receives;
-	 
+     
      if(ec)
      {
          log::toFile("In DyrBot::receive_handler for Bot {%}", bot_id);
@@ -338,20 +337,20 @@ namespace dyr
      request_receive();
  }
 
- //Loop for continually making send and receive request
+ 
  void DyrBot::message_pump()
  {     
      //Start the chain of request_receive calls
-	 request_receive();
-	 
+     request_receive();
+     
      while(status["connected_to_server"])
      {
          message_handler();
 
          if(status["request_to_disconnect"] && (pending_sends == 0))
          { disconnect(); }
-	 
-		 boost::this_thread::sleep_for(boost::chrono::milliseconds(20));
+     
+         boost::this_thread::sleep_for(boost::chrono::milliseconds(20));
      }
 
      log::toFile("Bot {%} message_pump ended", bot_id);
@@ -359,6 +358,7 @@ namespace dyr
      notify_manager(DyrError::disconnected);
  }
 
+ 
  void DyrBot::message_handler()
  {
      while(!messages.empty())
@@ -386,6 +386,7 @@ namespace dyr
     }
  }
 
+ 
  void DyrBot::log_error(const boost::system::error_code& ec)
  {
      std::string error_value;
@@ -594,6 +595,7 @@ namespace dyr
      log::toFile(ec.message()+error_value);
  }
 
+
  void DyrBot::register_connection()
  {
      request_send("PASS " + setting["connection_password"]);
@@ -601,57 +603,64 @@ namespace dyr
      request_send("USER " + setting["username"] + " " + setting["mode"] + " * " + " :" + setting["realname"]);
  }
 
+
  void DyrBot::join(const std::string& channel)
  {
-	 //Split channel string up into individual channels in the case of comma seperated channels
+     //Split channel string up into individual channels in the case of comma seperated channels
      request_send("JOIN " + channel);
-	 boost::split(channels, channel, boost::is_any_of(","), boost::token_compress_on);
+     boost::split(channels, channel, boost::is_any_of(","), boost::token_compress_on);
  }
 
+ 
  void DyrBot::part(const std::string& channel)
  {
-	 request_send("PART " + channel);
-	 std::set<std::string> part_channels;
-	 boost::split(part_channels, channel, boost::is_any_of(","), boost::token_compress_on);
-	 
-	 for(std::string a_channel : part_channels)
-	 {
-		channels.erase(a_channel);
-	 }
+     request_send("PART " + channel);
+     std::set<std::string> part_channels;
+     boost::split(part_channels, channel, boost::is_any_of(","), boost::token_compress_on);
+    
+     for(std::string a_channel : part_channels)
+     {
+         channels.erase(a_channel);
+     }
  }
 
+ 
  void DyrBot::part_all(const irc_message_struct* message, irc_privmsg_struct* privmsg)
  {
      for(auto& channel: channels)
      { 
-		request_send("PART " + channel);
+        request_send("PART " + channel);
      }
-	 
-	 channels.clear();
+    
+     channels.clear();
  }
+
  
  void DyrBot::privmsg(std::string target, std::string message)
  {
      request_send("PRIVMSG " + target + " :" + message);
  }
 
+ 
  void DyrBot::change_nick()
  {
      std::string nickname;
 
      for(int i(0); i < 8; ++i)
      { nickname += ((rng()%26)+65)+(32*(rng()%2)); }
-	
-	 setting["nickname"] = nickname;
+
+     setting["nickname"] = nickname;
      request_send("NICK " + nickname);
  }
- 
+
+
  void DyrBot::change_nick(std::string nickname)
  {
      setting["nickname"] = nickname;
      request_send("NICK " + nickname);
  }
- 
+
+
  void DyrBot::change_nick(const irc_message_struct* irc_message, irc_privmsg_struct* irc_privmsg)
  {
      if(irc_privmsg->arguments.size() > 0)
@@ -660,7 +669,8 @@ namespace dyr
          change_nick(irc_privmsg->arguments.at(0).at("").at(0));
      }
  }
- 
+
+
  void DyrBot::privmsg_handler(const irc_message_struct& message)
  {
      irc_privmsg_struct privmsg = parse::irc_privmsg(message, setting["command_ident"]);
@@ -671,7 +681,8 @@ namespace dyr
          { command[current_command](this, &message, &privmsg); }
      }
  }
- 
+
+
  void DyrBot::meta_command(const irc_message_struct* irc_message, irc_privmsg_struct* irc_privmsg)
  {
      std::string message;
@@ -708,6 +719,7 @@ namespace dyr
      privmsg(irc_privmsg->target, message);
  }
 
+
  void DyrBot::request_disconnect(const irc_message_struct* message, irc_privmsg_struct* privmsg)
  {
      part_all();
@@ -717,42 +729,46 @@ namespace dyr
      status["ready_to_receive"] = false;
  }
 
+
  void DyrBot::disconnect(const irc_message_struct* message, irc_privmsg_struct* privmsg)
  {
      boost::system::error_code ec;
-	 
+    
      tcp_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
-	 
-	 if(ec)
-	 {
-		 log::toFile("In DyrBot::disconnect for Bot {%}", bot_id);
-		 log::toFile(ec.message());
-	 }
-	 
+    
+     if(ec)
+     {
+         log::toFile("In DyrBot::disconnect for Bot {%}", bot_id);
+         log::toFile(ec.message());
+     }
+
      tcp_socket.close(ec);
-	 
-	 if(ec)
-	 {
-		 log::toFile("In DyrBot::disconnect for Bot {%}", bot_id);
-		 log::toFile(ec.message());
-	 }
-	 
+    
+     if(ec)
+     {
+         log::toFile("In DyrBot::disconnect for Bot {%}", bot_id);
+         log::toFile(ec.message());
+     }
+    
      status["connected_to_server"] = false;
      status["request_to_disconnect"] = false;
      status["ready_to_send"] = false;
      status["ready_to_receive"] = false;
  }
 
+
  void DyrBot::notify_manager_ready()
  {
      bot_manager.notify_ready(bot_id);
  }
 
+
  void DyrBot::notify_manager(DyrError&& error)
  {
      bot_manager.notify_error(bot_id, std::move(error));
  }
-  
+
+
  void DyrBot::substitute_variables(std::string& str)
  {
      std::size_t current_index = 0;
@@ -788,5 +804,5 @@ namespace dyr
          else
          { break; }
      }
- }       
+ }
 }
