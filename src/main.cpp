@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     catch(const std::exception& e)
     {
         std::cout << "Invalid input arguments\n" << std::endl;
-        return 1;
+        return 2;
     }
     
     if(vm.count("help"))
