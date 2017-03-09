@@ -23,6 +23,7 @@ add_executable(
   src/ID/Identifier.cpp
   src/Logger/Logger.cpp
   src/BotManager/BotManager.cpp
+  src/BotManager/BotFactory.cpp
   src/DyrBot/DyrBot.cpp
   src/ConnectionManager/ConnectionManager.cpp
   src/Parser/Parser.cpp
