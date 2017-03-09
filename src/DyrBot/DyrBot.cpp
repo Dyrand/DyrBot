@@ -517,10 +517,6 @@ namespace dyr
      {
          error_value = " {no_protocol_option}";
      }
-     else if( error == asio::error::no_such_device )
-     {
-         error_value = " {no_such_device}";
-     }
      else if( error == asio::error::not_connected )
      {
          error_value = " {not_connected}";
