@@ -22,3 +22,15 @@ cd build
 cmake ..
 make
 ```
+
+# Usage
+Create 1 bot using default config ./config/config.txt
+```
+dyrbot
+```
+
+Create 5 bots using the config file ./bot_config_files/dyrbot.txt
+```
+dyrbot -n 5 -d bot_config_file/dyrbot.txt
+```
+
