@@ -391,206 +391,223 @@ namespace dyr
  void DyrBot::log_error(const boost::system::error_code& ec)
  {
      std::string error_value;
-     switch(ec.value())
+     auto error = ec.value();
+     
+     if( error == asio::error::access_denied)
      {
-        case asio::error::access_denied:
-            error_value = " {access_denied}";
-        break;
-        case asio::error::address_family_not_supported:
+         error_value = " {access_denied}";
+     }
+     else if( error == asio::error::address_family_not_supported )
+     {
             error_value = " {address_family_not_supported}";
-        break;
-        case asio::error::address_in_use:
+     }
+     else if( error == asio::error::address_in_use )
+     {
             error_value = " {address_in_use}";
-        break;
-        case asio::error::already_connected:
-            error_value = " {already_connected}";
-        break;
-        case asio::error::already_started:
+     }
+     else if( error == asio::error::already_connected )
+     {
+        error_value = " {already_connected}";
+     }
+     else if( error == asio::error::already_started )
+     {
             error_value = " {already_started}";
-        break;
-        case asio::error::broken_pipe:
-        {
-            error_value = " {broken_pipe}";
-            status["connected_to_server"] =  false;
-            status["ready_to_send"] = false;
-            status["ready_to_receive"] = false;
-        }
-        break;
-        case asio::error::connection_aborted:
-        {
-            error_value = " {connection_aborted}";
-            status["connected_to_server"] =  false;
-            status["ready_to_send"] = false;
-            status["ready_to_receive"] = false;
-        }
-        break;
-        case asio::error::connection_refused:
-        {
-            error_value = " {connection_refused}";
-            status["connected_to_server"] =  false;
-            status["ready_to_send"] = false;
-            status["ready_to_receive"] = false;
-        }
-        break;
-        case asio::error::connection_reset:
-        {
-            error_value = " {connection_reset}";
-            status["connected_to_server"] =  false;
-            status["ready_to_send"] = false;
-            status["ready_to_receive"] = false;
-        }
-        break;
-        case asio::error::bad_descriptor:
-            error_value = " {bad_descriptor}";
-        break;
-        case asio::error::fault:
-        {
-            error_value = " {fault}";
-            status["connected_to_server"] =  false;
-            status["ready_to_send"] = false;
-            status["ready_to_receive"] = false;
-        }
-        break;
-        case asio::error::host_unreachable:
-            error_value = " {host_unreachable}";
-        break;
-        case asio::error::in_progress:
-            error_value = " {in_progress}";
-        break;
-        case asio::error::interrupted:
-            error_value = " {interrupted}";
-        break;
-        case asio::error::invalid_argument:
-            error_value = " {invalid_argument}";
-        break;
-        case asio::error::message_size:
-            error_value = " {message_size}";
-        break;
-        case asio::error::name_too_long:
-            error_value = " {name_too_long}";
-        break;
-        case asio::error::network_down:
-        {
-            error_value = " {network_down}";
-            status["connected_to_server"] =  false;
-            status["ready_to_send"] = false;
-            status["ready_to_receive"] = false;
-        }
-        break;
-        case asio::error::network_reset:
-        {
-            error_value = " {network_reset}";
-            status["connected_to_server"] =  false;
-            status["ready_to_send"] = false;
-            status["ready_to_receive"] = false;
-        }
-        break;
-        case asio::error::network_unreachable:
-        {
-            error_value = " {network_unreachable}";
-            status["connected_to_server"] =  false;
-            status["ready_to_send"] = false;
-            status["ready_to_receive"] = false;
-        }
-        break;
-        case asio::error::no_descriptors:
-            error_value = " {no_descriptors}";
-        break;
-        case asio::error::no_buffer_space:
-            error_value = " {no_buffer_space}";
-        break;
-        case asio::error::no_memory:
-            error_value = " {no_memory}";
-        break;
-        case asio::error::no_permission:
-            error_value = " {no_permission}";
-        break;
-        case asio::error::no_protocol_option:
-            error_value = " {no_protocol_option}";
-        break;
-        case asio::error::no_such_device:
-            error_value = " {no_such_device}";
-        break;
-        case asio::error::not_connected:
-        {
-            error_value = " {not_connected}";
-            status["connected_to_server"] =  false;
-            status["ready_to_send"] = false;
-            status["ready_to_receive"] = false;
-        }
-        break;
-        case asio::error::not_socket:
-            error_value = " {not_socket}";
-        break;
-        case asio::error::operation_aborted:
-        {
-            error_value = " {operation_aborted}";
-            status["connected_to_server"] =  false;
-            status["ready_to_send"] = false;
-            status["ready_to_receive"] = false;
-        }
-        break;
-        case asio::error::timed_out:
-            error_value = " {timed_out}";
-        break;
-        case asio::error::try_again:
-            error_value = " {try_again}";
-        break;
-        case asio::error::would_block:
-            error_value = " {would_block}";
-        break;
-        case asio::error::host_not_found:
-            error_value = " {host_not_found}";
-        break;
-        case asio::error::host_not_found_try_again:
-            error_value = " {host_not_found_try_again}";
-        break;
-        case asio::error::no_data:
-            error_value = " {no_data}";
-        break;
-        case asio::error::no_recovery:
-            error_value = " {no_recovery}";
-        break;
-        case asio::error::service_not_found:
-            error_value = " {service_not_found}";
-        break;
-        case asio::error::socket_type_not_supported:
-            error_value = " {socket_type_not_supported}";
-        break;
-        case asio::error::already_open:
-            error_value = " {already_open}";
-        break;
-        case asio::error::eof:
-        {
-            error_value = " {eof}";
-            status["connected_to_server"] =  false;
-            status["ready_to_send"] = false;
-            status["ready_to_receive"] = false;
-        }
-        break;
-        case asio::error::shut_down:
-        {
-            error_value = " {shut_down}";
-            status["connected_to_server"] =  false;
-            status["ready_to_send"] = false;
-            status["ready_to_receive"] = false;
-        }
-        break;
-        break;
-        case asio::error::not_found:
-            error_value = " {not_found}";
-        break;
-        case asio::error::fd_set_failure:
-            error_value = " {fd_set_failure}";
-        break;
+     }
+     else if( error == asio::error::broken_pipe )
+     {
+         error_value = " {broken_pipe}";
+         status["connected_to_server"] =  false;
+         status["ready_to_send"] = false;
+         status["ready_to_receive"] = false;
+     }
+     else if( error == asio::error::connection_aborted )
+     {
+         error_value = " {connection_aborted}";
+         status["connected_to_server"] =  false;
+         status["ready_to_send"] = false;
+         status["ready_to_receive"] = false;
+     }
+     else if( error == asio::error::connection_refused )
+     {
+         error_value = " {connection_refused}";
+         status["connected_to_server"] =  false;
+         status["ready_to_send"] = false;
+         status["ready_to_receive"] = false;
+     }
+     else if( error == asio::error::connection_reset )
+     {
+         error_value = " {connection_reset}";
+         status["connected_to_server"] =  false;
+         status["ready_to_send"] = false;
+         status["ready_to_receive"] = false;
+     }
+     else if( error == asio::error::bad_descriptor )
+     {
+         error_value = " {bad_descriptor}";
+     }
+     else if( error == asio::error::fault )
+     {
+         error_value = " {fault}";
+         status["connected_to_server"] =  false;
+         status["ready_to_send"] = false;
+         status["ready_to_receive"] = false;
+     }
+     else if( error == asio::error::host_unreachable )
+     {
+         error_value = " {host_unreachable}";
+     }
+     else if( error == asio::error::in_progress )
+     {
+         error_value = " {in_progress}";
+     }
+     else if( error == asio::error::interrupted )
+     {
+         error_value = " {interrupted}";
+     }
+     else if( error == asio::error::invalid_argument )
+     {
+         error_value = " {invalid_argument}";
+     }
+     else if( error == asio::error::message_size )
+     {
+         error_value = " {message_size}";
+     }
+     else if( error == asio::error::name_too_long )
+     {
+         error_value = " {name_too_long}";
+     }
+     else if( error == asio::error::network_down )
+     {
+         error_value = " {network_down}";
+         status["connected_to_server"] =  false;
+         status["ready_to_send"] = false;
+         status["ready_to_receive"] = false;
+     }
+     else if( error == asio::error::network_reset )
+     {
+         error_value = " {network_reset}";
+         status["connected_to_server"] =  false;
+         status["ready_to_send"] = false;
+         status["ready_to_receive"] = false;
+     }
+     else if( error == asio::error::network_unreachable )
+     {
+         error_value = " {network_unreachable}";
+         status["connected_to_server"] =  false;
+         status["ready_to_send"] = false;
+         status["ready_to_receive"] = false;
+     }
+     else if( error == asio::error::no_descriptors )
+     {
+         error_value = " {no_descriptors}";
+     }
+     else if( error == asio::error::no_buffer_space )
+     {
+         error_value = " {no_buffer_space}";
+     }
+     else if( error == asio::error::no_memory )
+     {
+         error_value = " {no_memory}";
+     }
+     else if( error == asio::error::no_permission )
+     {
+         error_value = " {no_permission}";
+     }
+     else if( error == asio::error::no_protocol_option )
+     {
+         error_value = " {no_protocol_option}";
+     }
+     else if( error == asio::error::no_such_device )
+     {
+         error_value = " {no_such_device}";
+     }
+     else if( error == asio::error::not_connected )
+     {
+         error_value = " {not_connected}";
+         status["connected_to_server"] =  false;
+         status["ready_to_send"] = false;
+         status["ready_to_receive"] = false;
+     }
+     else if( error == asio::error::not_socket )
+     {
+         error_value = " {not_socket}";
+     }
+     else if( error == asio::error::operation_aborted )
+     {
+         error_value = " {operation_aborted}";
+         status["connected_to_server"] =  false;
+         status["ready_to_send"] = false;
+         status["ready_to_receive"] = false;
+     }
+     else if( error == asio::error::timed_out )
+     {
+         error_value = " {timed_out}";
+     }
+     else if( error == asio::error::try_again )
+     {
+         error_value = " {try_again}";
+     }
+     else if( error == asio::error::would_block )
+     {
+         error_value = " {would_block}";
+     }
+     else if( error == asio::error::host_not_found )
+     {
+         error_value = " {host_not_found}";
+     }
+     else if( error == asio::error::host_not_found_try_again )
+     {
+         error_value = " {host_not_found_try_again}";
+     }
+     else if( error == asio::error::no_data )
+     {
+         error_value = " {no_data}";
+     }
+     else if( error == asio::error::no_recovery )
+     {
+         error_value = " {no_recovery}";
+     }
+     else if( error == asio::error::service_not_found )
+     {
+         error_value = " {service_not_found}";
+     }
+     else if( error == asio::error::socket_type_not_supported )
+     {
+         error_value = " {socket_type_not_supported}";
+     }
+     else if( error == asio::error::already_open )
+     {
+         error_value = " {already_open}";
+     }
+     else if( error == asio::error::eof )
+     {
+         error_value = " {eof}";
+         status["connected_to_server"] =  false;
+         status["ready_to_send"] = false;
+         status["ready_to_receive"] = false;
+     }
+     else if( error == asio::error::shut_down )
+     {
+         error_value = " {shut_down}";
+         status["connected_to_server"] =  false;
+         status["ready_to_send"] = false;
+         status["ready_to_receive"] = false;
+     }
+     else if( error == asio::error::not_found )
+     {
+         error_value = " {not_found}";
+     }
+     else if( error == asio::error::fd_set_failure )
+     {
+         error_value = " {fd_set_failure}";
+     }
         //Assume socket is in a bad state
-        default:
-        {
-            error_value = " {UNKNOWN}";
-            status["connected_to_server"] =  false;
-            status["ready_to_send"] = false;
-            status["ready_to_receive"] = false;
-        }
+     else
+     {
+         error_value = " {UNKNOWN}";
+         status["connected_to_server"] =  false;
+         status["ready_to_send"] = false;
+         status["ready_to_receive"] = false;
      }
 
      log::toFile(ec.message()+error_value);
