@@ -399,19 +399,19 @@ namespace dyr
      }
      else if( error == asio::error::address_family_not_supported )
      {
-            error_value = " {address_family_not_supported}";
+         error_value = " {address_family_not_supported}";
      }
      else if( error == asio::error::address_in_use )
      {
-            error_value = " {address_in_use}";
+         error_value = " {address_in_use}";
      }
      else if( error == asio::error::already_connected )
      {
-        error_value = " {already_connected}";
+         error_value = " {already_connected}";
      }
      else if( error == asio::error::already_started )
      {
-            error_value = " {already_started}";
+         error_value = " {already_started}";
      }
      else if( error == asio::error::broken_pipe )
      {
