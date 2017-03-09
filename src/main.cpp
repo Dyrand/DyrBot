@@ -15,7 +15,7 @@
 
 namespace po = boost::program_options;
 
-po::options_description initialize_command_line_options()
+po::options_description getCommandLineOptions()
 {
     po::options_description desc("DyrBot Options");
     desc.add_options()
@@ -28,7 +28,7 @@ po::options_description initialize_command_line_options()
 
 int main(int argc, char *argv[])
 {    
-    po::options_description desc = initialize_command_line_options();
+    po::options_description desc = getCommandLineOptions();
     po::variables_map vm;
     
     try
