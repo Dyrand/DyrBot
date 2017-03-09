@@ -17,7 +17,7 @@
 
 namespace dyr
 {
- BotManager::BotManager(const std::string& default_config)
+ BotManager::BotManager(std::string default_config)
  {
      default_config_file = default_config;
  }

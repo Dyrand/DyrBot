@@ -16,7 +16,7 @@ namespace dyr
  {
      public:
          BotManager(){}
-         BotManager(const std::string& default_config);
+         BotManager(std::string default_config);
          ~BotManager();
 
          int getBotCount();
