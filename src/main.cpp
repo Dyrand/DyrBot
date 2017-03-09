@@ -21,7 +21,7 @@ po::options_description getCommandLineOptions()
     desc.add_options()
         ("help", "display this help screen")
         ("number_of_bots,n", po::value<int>()->default_value(1), "set number of bots to create")
-        ("connection_delay,c", po::value<int>()->default_value(5000), "set the number of milliseconds to wait before connecting a bot")
+        ("connection_delay,c", po::value<int>()->default_value(1000), "set the number of milliseconds to wait before connecting another bot")
         ("default_config_file,d", po::value<std::string>()->default_value("config/config.txt"), "set the default config file for bots to use");
     return desc;
 }
@@ -54,8 +54,7 @@ int main(int argc, char *argv[])
     dyr::BotManager bot_manager(default_config_file);
 
     boost::thread lp(dyr::ConnectionManager::process);
-
-
+    
     for(int count = 1; count <= number_of_bots; ++count)
     { bot_manager.createBot(); }
 

@@ -100,6 +100,8 @@ namespace dyr
          int bot_id = iter.first;
          id_bot_thread.emplace(bot_id, boost::thread());
          iter.second.request_connect_to_server();
+         
+         boost::this_thread::sleep_for(boost::chrono::milliseconds(delay));
      }
  }
 
