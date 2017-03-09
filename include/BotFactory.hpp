@@ -6,7 +6,7 @@ namespace dyr
  class BotFactory
  {
      public:
-        BotFactory(std::string default_config = std::string("config/config.txt"));
+        BotFactory(std::string default_config = "config/config.txt");
         
         template<typename Bot>
         Bot createBot(std::string config_file)

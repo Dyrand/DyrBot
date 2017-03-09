@@ -9,13 +9,14 @@
 
 #include "DyrBot.hpp"
 #include "DyrBotErrors.hpp"
+#include "BotFactory.hpp"
 
 namespace dyr
 {
  class BotManager
  {
      public:
-         BotManager(std::string default_config = std::string("config/config.txt"));
+         BotManager(std::string default_config = "config/config.txt");
          ~BotManager();
 
          int getBotCount();
